@@ -1,0 +1,10 @@
+version: '2'
+services:
+  asterisk:
+    image: dougbtv/asterisk
+    network_mode: "host"
+    ports:
+      - '80:80'
+      - '9090:9090'
+    volumes:
+       - ./asterisk/etc/asterisk:/etc/asterisk:ro

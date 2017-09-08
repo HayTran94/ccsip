@@ -1,0 +1,7 @@
+.idea
+.work
+*.iml
+*.log
+*nohist*
+.env
+.DS_Store
