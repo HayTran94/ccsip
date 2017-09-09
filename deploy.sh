@@ -5,4 +5,4 @@ if [ ! -f .work/dropler/deploy.sh ]; then
   git clone https://github.com/github1/dropler.git .work/dropler
 fi
 
-sh .work/dropler/deploy.sh "${@:1}"
+. .work/dropler/deploy.sh "${@:1}"
