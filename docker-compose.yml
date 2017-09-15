@@ -1,10 +1,18 @@
 version: '2'
 services:
+  #kamailio:
+  #  build: ./kamailio
+  #  ports:
+  #    - 5060:5060/udp
+  #  depends_on:
+  #    - asterisk
   asterisk:
-    image: 'dougbtv/asterisk14'
-    network_mode: 'host'
+    image: dougbtv/asterisk14
+    ports:
+      - 5060:5060/udp
+      - 8088:8088
     volumes:
-       - './asterisk/etc/asterisk:/etc/asterisk'
+       - ./asterisk/etc/asterisk:/etc/asterisk
     environment:
       - LOCAL_NET
       - EXTERNAL_ADDR
