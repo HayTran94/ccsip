@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "ari-client": "^1.1.1"
+    "ari-client": "^1.1.1",
+    "superagent": "^3.6.0"
   }
 }

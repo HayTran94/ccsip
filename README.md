@@ -1,6 +1,6 @@
 # ccsip
 
-ccsip is a programmable SIP based communications service built on [Asterisk](http://www.asterisk.org/) and [Kamailio](https://www.kamailio.org/w/).
+ccsip is a programmable SIP based communications service built with [Asterisk](http://www.asterisk.org/) and [Kamailio](https://www.kamailio.org/w/).
 
 ## Getting started
 
@@ -17,7 +17,6 @@ Create a file named `.env` in the project root dir. Inside it `export` the follo
 - `SIP_TERMINATION_URI` - the twilio SIP trunk termination url (ends with .pstn.twilio.com)
 - `SIP_TERMINATION_USER` — a valid user specified in the twilio SIP trunk credentials list
 - `SIP_TERMINATION_SECRET` - the password for the twilio SIP trunk user 
-- `SIP_TERMINATION_PHONE_NUMBER` — the public phone number associated with the SIP trunk
 - `SIP_EXTENSION_SECRET` — the secret for registering SIP devices
 - `TWILIO_ACCOUNT_SID` — your twilio account SID
 - `TWILIO_AUTH_TOKEN` — your twilio auth token

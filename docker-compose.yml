@@ -1,19 +1,14 @@
 version: '2'
 services:
-  #kamailio:
-  #  build: ./kamailio
-  #  ports:
-  #    - 5060:5060/udp
-  #  depends_on:
-  #    - asterisk
+  api:
+    build: ./api
+    depends_on:
+      - asterisk
+    environment:
+      - EXTERNAL_ADDR=asterisk
+    restart: on-failure
   asterisk:
-    image: dougbtv/asterisk14
+    build: ./asterisk
     ports:
       - 5060:5060/udp
       - 8088:8088
-    volumes:
-       - ./asterisk/etc/asterisk:/etc/asterisk
-    environment:
-      - LOCAL_NET
-      - EXTERNAL_ADDR
-      - SIP_TERMINATION_PHONE_NUMBER
