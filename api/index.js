@@ -53,19 +53,15 @@ function clientLoaded (err, client) {
 
                 console.log('Channel %s has entered our application', channel.name);
 
-                setTimeout(() => {
+                var playback = client.Playback();
+                channel.play({media: 'sound:pls-hold-while-try'},
+                    playback, function (err, playback) {
+                        if (err) {
+                            throw err;
+                        }
+                    });
 
-                    var playback = client.Playback();
-                    channel.play({media: 'sound:pls-hold-while-try'},
-                        playback, function(err, playback) {
-                            if (err) {
-                                throw err;
-                            }
-                        });
-
-                    originate(channel);
-
-                }, 500);
+                originate(channel);
 
             });
         }
