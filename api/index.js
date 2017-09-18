@@ -1,36 +1,62 @@
-const EXTERNAL_ADDR = process.env.EXTERNAL_ADDR;
-const ariEndpoint = `http://${EXTERNAL_ADDR}:8088`;
+const DISABLED = process.env.DISABLED;
+const EXTERNAL_ADDR = process.env.EXTERNAL_ADDR || 'ccsip.open-cc.org';
 const ariUser = 'asterisk';
 const ariSecret = 'asterisk';
 const ari = require('ari-client');
+const dns = require('dns');
 const superagent = require('superagent');
+const stringify = require('json-stringify-safe');
 
-const init = (maxAttempts, attempt) => {
-    console.log(`Attempting to connect to ${ariEndpoint}`);
-    attempt = typeof attempt === 'undefined' ? 0 : attempt;
-    superagent
-        .get(`${ariEndpoint}/ari/api-docs/resources.json`)
-        .auth(ariUser, ariSecret)
-        .then(() => {
-            ari.connect(
-                ariEndpoint,
-                ariUser,
-                ariSecret, (err, ari) => {
-                    clientLoaded(err, ari);
-                });
-        })
-        .catch(() => {
-            setTimeout(() => {
-                init(maxAttempts, attempt + 1)
-            }, 1000);
+if('true' == DISABLED) {
+    console.log('ari app disabled');
+    process.exit(0);
+}
+
+const init = (host, maxAttempts, attempt) => {
+    if(isNaN(host[0])) {
+        dns.resolve(host, (err, resolved) => {
+            console.log(resolved);
+            init(resolved[0], maxAttempts, attempt);
         });
+    } else {
+        const ariEndpoint = `http://${host}:8088`;
+        console.log(`Attempting to connect to ${ariEndpoint}`);
+        attempt = typeof attempt === 'undefined' ? 0 : attempt;
+        superagent
+            .get(`${ariEndpoint}/ari/api-docs/resources.json`)
+            .auth(ariUser, ariSecret)
+            .then(() => {
+                ari.connect(
+                    ariEndpoint,
+                    ariUser,
+                    ariSecret, (err, ari) => {
+                        clientLoaded(err, ari);
+                    });
+            })
+            .catch(() => {
+                setTimeout(() => {
+                    init(host, maxAttempts, attempt + 1)
+                }, 1000);
+            });
+    }
 };
 
-init(500);
+init(EXTERNAL_ADDR, 500);
 
 const util = require('util');
 
-const endpointToDial = 'SIP/1001';
+const playSound = (client, sound, channel) => {
+    return new Promise((resolve, reject) => {
+        var playback = client.Playback();
+        channel.play({media: `sound:${sound}`}, (err, playbackInst) => {
+            if(err) {
+                reject(err);
+            } else {
+                resolve(playbackInst);
+            }
+        });
+    });
+};
 
 // handler for client being loaded
 function clientLoaded (err, client) {
@@ -53,21 +79,40 @@ function clientLoaded (err, client) {
 
                 console.log('Channel %s has entered our application', channel.name);
 
-                var playback = client.Playback();
-                channel.play({media: 'sound:pls-hold-while-try'},
-                    playback, function (err, playback) {
-                        if (err) {
-                            throw err;
-                        }
-                    });
+                setTimeout(() => {
+                    playSound(client, 'queue-periodic-announce', channel)
+                        .then(() => {
+                            playSound(client, '00_starface-music-8', channel)
+                                .then((holdMusic) => {
 
-                originate(channel);
+                                    const findEndpoint = () => {
+                                        console.log('Checking for available endpoint');
+                                        client.endpoints.list().then((endpoints) => {
+                                            const matchingEndpoints = endpoints.filter((ep) => {
+                                                return ep.resource === '1001' && ep.state === 'online';
+                                            });
+                                            if(matchingEndpoints.length === 0) {
+                                                console.log('No endpoints found');
+                                                setTimeout(() => {
+                                                    findEndpoint();
+                                                }, 1000);
+                                            } else {
+                                                const endpoint = matchingEndpoints[0];
+                                                originate(`${endpoint.technology}/${endpoint.resource}`, channel, holdMusic);
+                                            }
+                                        });
+                                    };
+                                    findEndpoint();
+
+                                });
+                        });
+                }, 500);
 
             });
         }
     }
 
-    function originate(channel) {
+    function originate(endpointToDial, channel, holdMusic) {
         var dialed = client.Channel();
 
         channel.on('StasisEnd', function(event, channel) {
@@ -79,7 +124,7 @@ function clientLoaded (err, client) {
         });
 
         dialed.on('StasisStart', function(event, dialed) {
-            joinMixingBridge(channel, dialed);
+            joinMixingBridge(channel, dialed, holdMusic);
         });
 
         dialed.originate(
@@ -119,7 +164,7 @@ function clientLoaded (err, client) {
     }
 
     // handler for dialed channel entering Stasis
-    function joinMixingBridge(channel, dialed) {
+    function joinMixingBridge(channel, dialed, holdMusic) {
         var bridge = client.Bridge();
 
         dialed.on('StasisEnd', function(event, dialed) {
@@ -130,6 +175,14 @@ function clientLoaded (err, client) {
             if (err) {
                 throw err;
             }
+            console.log('agent picked up');
+
+            client.playbacks.stop(
+                {playbackId: holdMusic.id},
+                function (err) {
+                    console.log(err);
+                }
+            );
         });
 
         bridge.create({type: 'mixing'}, function(err, bridge) {

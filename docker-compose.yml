@@ -6,6 +6,7 @@ services:
       - asterisk
     environment:
       - EXTERNAL_ADDR=asterisk
+      - DISABLED=false
     restart: on-failure
   asterisk:
     build: ./asterisk

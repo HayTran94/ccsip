@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ ! -f .work/dropler/deploy.sh ]; then
-  mkdir -p tmp
+  mkdir -p .work
   git clone https://github.com/github1/dropler.git .work/dropler
 fi
 

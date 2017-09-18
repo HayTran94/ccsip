@@ -4,12 +4,16 @@
   "description": "ccsip-api",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
     "ari-client": "^1.1.1",
+    "json-stringify-safe": "^5.0.1",
     "superagent": "^3.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.1"
   }
 }
