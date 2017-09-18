@@ -11,5 +11,6 @@ services:
   asterisk:
     build: ./asterisk
     ports:
+      - 5038:5038
       - 5060:5060/udp
       - 8088:8088

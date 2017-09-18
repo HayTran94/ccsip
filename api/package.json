@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "ami-io": "^1.1.2",
     "ari-client": "^1.1.1",
     "json-stringify-safe": "^5.0.1",
     "superagent": "^3.6.0"
