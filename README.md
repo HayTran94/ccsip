@@ -21,6 +21,8 @@ Create a file named `.env` in the project root dir. Inside it `export` the follo
 - `TWILIO_ACCOUNT_SID` — your twilio account SID
 - `TWILIO_AUTH_TOKEN` — your twilio auth token
 - `DIGITALOCEAN_TOKEN` — your DigitalOcean API token
+- `ASTERISK_API_USER` — the username to use for the asterisk api
+- `ASTERISK_API_SECRET` — the password to use for the asterisk api
 
 ## Deploy
 

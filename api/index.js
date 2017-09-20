@@ -1,227 +1,140 @@
-const DISABLED = process.env.DISABLED;
-const EXTERNAL_ADDR = process.env.EXTERNAL_ADDR || 'ccsip.open-cc.org';
-const ariUser = 'asterisk';
-const ariSecret = 'asterisk';
-const ari = require('ari-client');
-const dns = require('dns');
-const superagent = require('superagent');
-const stringify = require('json-stringify-safe');
-
-if('true' == DISABLED) {
-    console.log('ari app disabled');
+if ('true' == process.env.DISABLED) {
+    console.log('api integration disabled');
     process.exit(0);
 }
 
-const init = (host, maxAttempts, attempt) => {
-    if(isNaN(host[0])) {
-        dns.resolve(host, (err, resolved) => {
-            console.log(resolved);
-            init(resolved[0], maxAttempts, attempt);
+// asterisk integration
+const ASTERISK_HOST = process.env.ASTERISK_HOST || 'ccsip.open-cc.org';
+const ASTERISK_API_USER = process.env.ASTERISK_API_USER;
+const ASTERISK_API_SECRET = process.env.ASTERISK_API_SECRET;
+const amiIntegration = require('./src/integration/ami');
+const ariIntegration = require('./src/integration/ari');
+
+// core
+const ddd = require('ddd-es-node/dist/src/core/entity');
+const es = require('ddd-es-node/dist/src/runtime/es');
+const projections = require('./src/core/projections');
+const calls = require('./src/core/call');
+const agents = require('./src/core/agent');
+const callService = new calls.CallService(es.entityRepository);
+const agentService = new agents.AgentService(es.entityRepository, es.eventBus);
+const callQueue = require('./src/core/call_queue');
+
+// api
+const restAPI = require('./src/api/rest_api');
+
+// state
+const channels = {};
+const channelSounds = {};
+
+// init projections
+projections.init(es.eventBus);
+
+// init call queue
+callQueue(es.eventBus, callService, agentService);
+
+// init ari
+ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((ari) => {
+
+    // refresh agent state
+    ari.endpoints.list().then((endpoints) => {
+        endpoints.filter(endpoint => endpoint.state !== 'unknown').forEach(endpoint => {
+            agentService.assignExtension(endpoint.resource, `${endpoint.technology}/${endpoint.resource}`)
+                .then(() => {
+                    if (endpoint.state === 'online') {
+                        agentService.makeAvailable(endpoint.resource);
+                    } else {
+                        agentService.makeOffline(endpoint.resource);
+                    }
+                });
         });
-    } else {
-        const ariEndpoint = `http://${host}:8088`;
-        console.log(`Attempting to connect to ${ariEndpoint}`);
-        attempt = typeof attempt === 'undefined' ? 0 : attempt;
-        superagent
-            .get(`${ariEndpoint}/ari/api-docs/resources.json`)
-            .auth(ariUser, ariSecret)
-            .then(() => {
-                ari.connect(
-                    ariEndpoint,
-                    ariUser,
-                    ariSecret, (err, ari) => {
-                        clientLoaded(err, ari);
-                    });
-            })
-            .catch(() => {
-                setTimeout(() => {
-                    init(host, maxAttempts, attempt + 1)
-                }, 1000);
-            });
-    }
-};
+    }).then(() => {
 
-init(EXTERNAL_ADDR, 500);
-
-const util = require('util');
-
-const playSound = (client, sound, channel) => {
-    return new Promise((resolve, reject) => {
-        var playback = client.Playback();
-        channel.play({media: `sound:${sound}`}, (err, playbackInst) => {
-            if(err) {
-                reject(err);
-            } else {
-                resolve(playbackInst);
+        // start stasis app
+        ari.on('StasisStart', (event, channel) => {
+            if (event.args[0] === 'dialed') {
+                return;
             }
-        });
-    });
-};
-
-// handler for client being loaded
-function clientLoaded (err, client) {
-    if (err) {
-        throw err;
-    }
-
-    // handler for StasisStart event
-    function stasisStart(event, channel) {
-        // ensure the channel is not a dialed channel
-        var dialed = event.args[0] === 'dialed';
-
-        console.log('isdialed', dialed);
-
-        if (!dialed) {
-            channel.answer(function(err) {
+            channel.answer((err) => {
                 if (err) {
                     throw err;
                 }
-
-                console.log('Channel %s has entered our application', channel.name);
-
-                setTimeout(() => {
-                    playSound(client, 'queue-periodic-announce', channel)
-                        .then(() => {
-                            playSound(client, '00_starface-music-8', channel)
-                                .then((holdMusic) => {
-
-                                    const findEndpoint = () => {
-                                        console.log('Checking for available endpoint');
-                                        client.endpoints.list().then((endpoints) => {
-                                            const matchingEndpoints = endpoints.filter((ep) => {
-                                                return ep.resource === '1001' && ep.state === 'online';
-                                            });
-                                            if(matchingEndpoints.length === 0) {
-                                                console.log('No endpoints found');
-                                                setTimeout(() => {
-                                                    findEndpoint();
-                                                }, 1000);
-                                            } else {
-                                                const endpoint = matchingEndpoints[0];
-                                                originate(`${endpoint.technology}/${endpoint.resource}`, channel, holdMusic);
-                                            }
-                                        });
-                                    };
-                                    findEndpoint();
-
-                                });
-                        });
-                }, 500);
-
+                channels[channel.id] = channel;
+                channel.on('StasisEnd', (event, channel) => {
+                    callService.endCall(channel.id);
+                });
+                callService.initiateCall(event.channel.id, event.channel.caller.number, event.channel.dialplan.exten);
             });
+        });
+        es.eventBus.subscribe((event) => {
+            if (event.type === 'QueueProgress') {
+                if (channels[event.streamId] && !channelSounds[event.streamId]) {
+                    // add delay so beginning of message isn't cut off
+                    setTimeout(() => {
+                        ariIntegration.playSounds(ari, ['queue-periodic-announce'], channels[event.streamId])
+                            .then((playbacks) => {
+                                channelSounds[event.streamId] = playbacks.map(playback => playback.id);
+                                callService.placeOnHold(event.streamId);
+                            });
+                    }, 500);
+                }
+            } else if (event instanceof calls.CallPlacedOnHoldEvent) {
+                // play hold music
+                // queue-callswaiting
+                if (channels[event.streamId]) {
+                    ariIntegration.playSounds(ari, ['00_starface-music-8'], channels[event.streamId])
+                        .then((playbacks) => {
+                            channelSounds[event.streamId] = (channelSounds[event.streamId] || []).concat(playbacks.map(playback => playback.id));
+                        });
+                }
+            } else if (event instanceof calls.CallRoutedEvent) {
+                // route to extension
+                if (channels[event.streamId]) {
+                    ariIntegration.originate(ari, event.endpoint, channels[event.streamId], {
+                        onAnswer: () => {
+                            callService.answer(event.streamId, event.endpoint).then(() => {
+                                ariIntegration.stopSounds(ari, channelSounds[event.streamId] || []);
+                            });
+                        }
+                    });
+                }
+            }
+        });
+
+    });
+
+    ari.start('bridge-dial');
+});
+
+// subscribe to ami events
+amiIntegration(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET, {
+    onConnect: () => {
+        // start rest API
+        restAPI(9999, agentService);
+    },
+    onEvent: (event) => {
+        //console.log(JSON.stringify(event));
+        switch (event.event) {
+            case 'DeviceStateChange':
+                const id = event.device.split('/')[1];
+                agentService.assignExtension(id, event.device)
+                    .then(() => {
+                        switch (event.state) {
+                            case 'NOT_INUSE':
+                                agentService.makeAvailable(id);
+                                break;
+                            case 'UNAVAILABLE':
+                                agentService.makeOffline(id);
+                                break;
+                        }
+                    });
+                break;
         }
     }
+});
 
-    function originate(endpointToDial, channel, holdMusic) {
-        var dialed = client.Channel();
+// log unhandled rejections
+process.on('unhandledRejection', error => {
+    console.log('unhandledRejection', error);
+});
 
-        channel.on('StasisEnd', function(event, channel) {
-            hangupDialed(channel, dialed);
-        });
-
-        dialed.on('ChannelDestroyed', function(event, dialed) {
-            hangupOriginal(channel, dialed);
-        });
-
-        dialed.on('StasisStart', function(event, dialed) {
-            joinMixingBridge(channel, dialed, holdMusic);
-        });
-
-        dialed.originate(
-            {endpoint: endpointToDial, app: 'bridge-dial', appArgs: 'dialed'},
-            function(err, dialed) {
-                if (err) {
-                    throw err;
-                }
-            });
-    }
-
-    // handler for original channel hanging up so we can gracefully hangup the
-    // other end
-    function hangupDialed(channel, dialed) {
-        console.log(
-            'Channel %s left our application, hanging up dialed channel %s',
-            channel.name, dialed.name);
-
-        // hangup the other end
-        dialed.hangup(function(err) {
-            // ignore error since dialed channel could have hung up, causing the
-            // original channel to exit Stasis
-        });
-    }
-
-    // handler for the dialed channel hanging up so we can gracefully hangup the
-    // other end
-    function hangupOriginal(channel, dialed) {
-        console.log('Dialed channel %s has been hung up, hanging up channel %s',
-            dialed.name, channel.name);
-
-        // hangup the other end
-        channel.hangup(function(err) {
-            // ignore error since original channel could have hung up, causing the
-            // dialed channel to exit Stasis
-        });
-    }
-
-    // handler for dialed channel entering Stasis
-    function joinMixingBridge(channel, dialed, holdMusic) {
-        var bridge = client.Bridge();
-
-        dialed.on('StasisEnd', function(event, dialed) {
-            dialedExit(dialed, bridge);
-        });
-
-        dialed.answer(function(err) {
-            if (err) {
-                throw err;
-            }
-            console.log('agent picked up');
-
-            client.playbacks.stop(
-                {playbackId: holdMusic.id},
-                function (err) {
-                    console.log(err);
-                }
-            );
-        });
-
-        bridge.create({type: 'mixing'}, function(err, bridge) {
-            if (err) {
-                throw err;
-            }
-
-            console.log('Created bridge %s', bridge.id);
-
-            addChannelsToBridge(channel, dialed, bridge);
-        });
-    }
-
-    // handler for the dialed channel leaving Stasis
-    function dialedExit(dialed, bridge) {
-        console.log(
-            'Dialed channel %s has left our application, destroying bridge %s',
-            dialed.name, bridge.id);
-
-        bridge.destroy(function(err) {
-            if (err) {
-                throw err;
-            }
-        });
-    }
-
-    // handler for new mixing bridge ready for channels to be added to it
-    function addChannelsToBridge(channel, dialed, bridge) {
-        console.log('Adding channel %s and dialed channel %s to bridge %s',
-            channel.name, dialed.name, bridge.id);
-
-        bridge.addChannel({channel: [channel.id, dialed.id]}, function(err) {
-            if (err) {
-                throw err;
-            }
-        });
-    }
-
-    client.on('StasisStart', stasisStart);
-
-    client.start('bridge-dial');
-}

@@ -4,17 +4,23 @@
   "description": "ccsip-api",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
     "ami-io": "^1.1.2",
     "ari-client": "^1.1.1",
+    "body-parser": "^1.18.1",
+    "ddd-es-node": "0.0.3",
+    "express": "^4.15.4",
     "json-stringify-safe": "^5.0.1",
     "superagent": "^3.6.0"
   },
   "devDependencies": {
+    "jest": "^21.1.0",
     "nodemon": "^1.12.1"
   }
 }
