@@ -1,4 +1,4 @@
-const ddd = require('ddd-es-node/dist/src/core/entity');
+const ddd = require('ddd-es-node');
 const Entity = ddd.Entity;
 const EntityEvent = ddd.EntityEvent;
 

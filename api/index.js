@@ -11,13 +11,12 @@ const amiIntegration = require('./src/integration/ami');
 const ariIntegration = require('./src/integration/ari');
 
 // core
-const ddd = require('ddd-es-node/dist/src/core/entity');
-const es = require('ddd-es-node/dist/src/runtime/es');
+const ddd = require('ddd-es-node');
 const projections = require('./src/core/projections');
 const calls = require('./src/core/call');
 const agents = require('./src/core/agent');
-const callService = new calls.CallService(es.entityRepository);
-const agentService = new agents.AgentService(es.entityRepository, es.eventBus);
+const callService = new calls.CallService(ddd.entityRepository);
+const agentService = new agents.AgentService(ddd.entityRepository, ddd.eventBus);
 const callQueue = require('./src/core/call_queue');
 
 // api
@@ -28,10 +27,10 @@ const channels = {};
 const channelSounds = {};
 
 // init projections
-projections.init(es.eventBus);
+projections.init(ddd.eventBus);
 
 // init call queue
-callQueue(es.eventBus, callService, agentService);
+callQueue(ddd.eventBus, callService, agentService);
 
 // init ari
 ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((ari) => {
@@ -66,7 +65,7 @@ ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((
                 callService.initiateCall(event.channel.id, event.channel.caller.number, event.channel.dialplan.exten);
             });
         });
-        es.eventBus.subscribe((event) => {
+        ddd.eventBus.subscribe((event) => {
             if (event.type === 'QueueProgress') {
                 if (channels[event.streamId] && !channelSounds[event.streamId]) {
                     // add delay so beginning of message isn't cut off

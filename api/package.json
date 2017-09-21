@@ -14,7 +14,7 @@
     "ami-io": "^1.1.2",
     "ari-client": "^1.1.1",
     "body-parser": "^1.18.1",
-    "ddd-es-node": "0.0.3",
+    "ddd-es-node": "0.0.9",
     "express": "^4.15.4",
     "json-stringify-safe": "^5.0.1",
     "superagent": "^3.6.0"
