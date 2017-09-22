@@ -28,7 +28,7 @@ services:
   asterisk:
     build: ./asterisk
     ports:
-      - 8088:8088
+      - 5038:5038
     environment:
       - SERVICE_NAME=asterisk
   api:
@@ -38,7 +38,7 @@ services:
     depends_on:
       - asterisk
     environment:
-      - DISABLED=true
+      - DISABLED=false
       - ASTERISK_HOST=asterisk
       - ASTERISK_API_USER
       - ASTERISK_API_SECRET
