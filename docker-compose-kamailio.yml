@@ -29,9 +29,17 @@ services:
     build: ./asterisk
     ports:
       - 8088:8088
-      - 10001:10001/udp
     environment:
       - SERVICE_NAME=asterisk
-      - LOCAL_NET
-      - EXTERNAL_ADDR
-      - SIP_TERMINATION_PHONE_NUMBER
+  api:
+    build: ./api
+    ports:
+      - 9999:9999
+    depends_on:
+      - asterisk
+    environment:
+      - DISABLED=true
+      - ASTERISK_HOST=asterisk
+      - ASTERISK_API_USER
+      - ASTERISK_API_SECRET
+    restart: on-failure
