@@ -27,8 +27,9 @@ export EXTERNAL_ADDR
 export SIP_TERMINATION_PHONE_NUMBER="${TWILIO_SIP_TRUNK_PN}"
 
 REPLACE_VARS="'"$(declare -px | awk '{print $3}' | awk -F'=' '{print "${"$1"}"}' | tr '\n' ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"'"
-find /ccsip/asterisk/etc/asterisk \
-  -type f \
+
+find /${DP_NAME}/ \
+  \( -name '*.cfg' -o -name '*.conf' \) \
   -exec sh -c 'envsubst '"$REPLACE_VARS"' < {} > {}.tmp; mv {}.tmp {}' \;
 
 if [ "$TWILIO_SIP_TRUNK_ORIG_URL_ADDR" = "sip:$EXTERNAL_ADDR" ]; then
@@ -38,6 +39,6 @@ else
   exit 1
 fi
 
-docker-compose -f /${DP_NAME}/docker-compose.yml rm -f
-docker-compose -f /${DP_NAME}/docker-compose.yml build
-docker-compose -f /${DP_NAME}/docker-compose.yml up
+docker-compose -f /${DP_NAME}/docker-compose-kamailio.yml rm -f
+docker-compose -f /${DP_NAME}/docker-compose-kamailio.yml build
+docker-compose -f /${DP_NAME}/docker-compose-kamailio.yml up
