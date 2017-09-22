@@ -116,6 +116,10 @@ amiIntegration(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET, {
         switch (event.event) {
             case 'DeviceStateChange':
                 const id = event.device.split('/')[1];
+                if(isNaN(id)) {
+                    console.log('excluding device', id);
+                    return;
+                }
                 agentService.assignExtension(id, event.device)
                     .then(() => {
                         switch (event.state) {

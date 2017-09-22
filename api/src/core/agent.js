@@ -33,6 +33,10 @@ class Agent extends Entity {
     makeOffline() {
         this.dispatch(this.id, new AgentStatusChangedEvent('offline'));
     }
+
+    reserve() {
+        this.dispatch(this.id, new AgentStatusChangedEvent('reserved'));
+    }
 }
 
 const agents = {};
@@ -74,7 +78,7 @@ class AgentService {
                     // select available agent randomly
                     const agent = agents[Math.floor(Math.random() * agents.length)];
                     // 'reserve' agent by placing them offline
-                    this.makeOffline(agent.id).then(() => {
+                    this.reserve(agent.id).then(() => {
                         releaseActions.push(() => {
                             // 'release' agent after call completes
                             this.makeAvailable(agent.id);
@@ -113,6 +117,12 @@ class AgentService {
     makeOffline(agentId) {
         return this.entityRepository.load(Agent, agentId).then((agent) => {
             agent.makeOffline();
+        });
+    }
+
+    reserve(agentId) {
+        return this.entityRepository.load(Agent, agentId).then((agent) => {
+            agent.reserve();
         });
     }
 }

@@ -6,6 +6,7 @@ module.exports = (eventBus, callService, agentService) => {
     eventBus.subscribe((event) => {
         if (event instanceof calls.CallInitiatedEvent) {
             releaseAgent[event.streamId] = agentService.untilAvailableAgent((agent) => {
+                console.log('reserved agent', agent);
                 callService.routeTo(event.streamId, agent.extension);
             }, (numChecks, timeWaiting) => {
                 eventBus.emit({
