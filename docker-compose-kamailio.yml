@@ -23,11 +23,10 @@ services:
       - 5060:5060/udp
     depends_on:
       - consul
-    environment:
-      - EXTERNAL_ADDR
   asterisk:
     build: ./asterisk
     ports:
+      - 8088:8088
       - 5038:5038
     environment:
       - SERVICE_NAME=asterisk
@@ -38,7 +37,7 @@ services:
     depends_on:
       - asterisk
     environment:
-      - DISABLED=false
+      - DISABLED=true
       - ASTERISK_HOST=asterisk
       - ASTERISK_API_USER
       - ASTERISK_API_SECRET
