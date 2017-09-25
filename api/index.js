@@ -4,7 +4,7 @@ if ('true' == process.env.DISABLED) {
 }
 
 // asterisk integration
-const ASTERISK_HOST = process.env.ASTERISK_HOST || 'ccsip.open-cc.org';
+const ASTERISK_HOST = process.env.ASTERISK_HOST || 'ccsip-asterisk-0.open-cc.org';
 const ASTERISK_API_USER = process.env.ASTERISK_API_USER;
 const ASTERISK_API_SECRET = process.env.ASTERISK_API_SECRET;
 const amiIntegration = require('./src/integration/ami');

@@ -7,37 +7,30 @@ let client = null;
 exports.init = (asteriskHost, asteriskUser, asteriskSecret) => {
     client = client || new Promise((resolve, reject) => {
             const init = (host, maxAttempts, attempt) => {
-                if (isNaN(host[0])) {
-                    dns.resolve(host, (err, resolved) => {
-                        console.log(resolved);
-                        init(resolved[0], maxAttempts, attempt);
+                const ariEndpoint = `http://${host}:8088`;
+                console.log(`Attempting to connect to ${ariEndpoint}`);
+                attempt = typeof attempt === 'undefined' ? 0 : attempt;
+                superagent
+                    .get(`${ariEndpoint}/ari/api-docs/resources.json`)
+                    .auth(asteriskUser, asteriskSecret)
+                    .then(() => {
+                        ari.connect(
+                            ariEndpoint,
+                            asteriskUser,
+                            asteriskSecret, (err, ari) => {
+                                // todo error handling
+                                resolve(ari);
+                            });
+                    })
+                    .catch((err) => {
+                        if (maxAttempts === attempt) {
+                            reject(err);
+                        } else {
+                            setTimeout(() => {
+                                init(host, maxAttempts, attempt + 1)
+                            }, 1000);
+                        }
                     });
-                } else {
-                    const ariEndpoint = `http://${host}:8088`;
-                    console.log(`Attempting to connect to ${ariEndpoint}`);
-                    attempt = typeof attempt === 'undefined' ? 0 : attempt;
-                    superagent
-                        .get(`${ariEndpoint}/ari/api-docs/resources.json`)
-                        .auth(asteriskUser, asteriskSecret)
-                        .then(() => {
-                            ari.connect(
-                                ariEndpoint,
-                                asteriskUser,
-                                asteriskSecret, (err, ari) => {
-                                    // todo error handling
-                                    resolve(ari);
-                                });
-                        })
-                        .catch((err) => {
-                            if (maxAttempts === attempt) {
-                                reject(err);
-                            } else {
-                                setTimeout(() => {
-                                    init(host, maxAttempts, attempt + 1)
-                                }, 1000);
-                            }
-                        });
-                }
             };
             init(asteriskHost, 500);
         });
