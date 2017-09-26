@@ -22,6 +22,7 @@ exports.init = (eventBus) => {
                 const agentId = agentsByExtensionView[event.endpoint].id;
                 agentCallsView[agentId] = agentCallsView[agentId] || [];
                 agentCallsView[agentId].push(event.streamId);
+                callsView[event.streamId].agentId = agentId;
             }
         } else if (event instanceof calls.CallAnsweredEvent) {
             if(callsView[event.streamId]) {
@@ -32,7 +33,11 @@ exports.init = (eventBus) => {
                 callsView[event.streamId].endedOn = event.timestamp;
             }
         }
-    });
+    }, { replay: true });
+};
+
+exports.listCalls = () => {
+    return Object.keys(callsView).map(callId => callsView[callId]);
 };
 
 exports.findAgentCalls = (agentId) => {
