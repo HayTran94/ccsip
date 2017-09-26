@@ -36,6 +36,8 @@ if [ "${INSTANCE_TYPE}" = "kamailio" ]; then
 
 else
 
+  export SIGNALING_PROXY_HOST=$(echo $DP_TAG_MEMBERS | grep "kamailio" | awk '{print $2}')
+
   curl -X PUT \
      -d '{"Datacenter": "dc1", "Node": "'"${INSTANCE_NAME}"'", "Address": "'"${PRIVATE_ADDR}"'", "Service": {"Service": "'"${INSTANCE_TYPE}"'", "Port": 5060, "Tags": [ "udp" ]}}' \
      http://ccsip-kamailio-0.open-cc.org:8500/v1/catalog/register

@@ -19,19 +19,30 @@ class AgentStatusChangedEvent extends EntityEvent {
 class Agent extends Entity {
     constructor(id) {
         super(id, Entity.CONFIG((self, event) => {
+            if(event instanceof AgentExtensionAssignedEvent) {
+                this.extension = event.extension;
+            } else if (event instanceof AgentStatusChangedEvent) {
+                this.status = event.status;
+            }
         }));
     }
 
     assignExtension(extension) {
-        this.dispatch(this.id, new AgentExtensionAssignedEvent(extension));
+        if(this.extension !== extension) {
+            this.dispatch(this.id, new AgentExtensionAssignedEvent(extension));
+        }
     }
 
     makeAvailable() {
-        this.dispatch(this.id, new AgentStatusChangedEvent('available'));
+        if(this.status !== 'available') {
+            this.dispatch(this.id, new AgentStatusChangedEvent('available'));
+        }
     }
 
     makeOffline() {
-        this.dispatch(this.id, new AgentStatusChangedEvent('offline'));
+        if(this.state !== 'offline') {
+            this.dispatch(this.id, new AgentStatusChangedEvent('offline'));
+        }
     }
 }
 
@@ -47,7 +58,7 @@ class AgentService {
             } else if (event instanceof AgentStatusChangedEvent) {
                 agents[event.streamId].status = event.status;
             }
-        });
+        }, {replay: true});
     }
 
     untilAvailableAgent(callback, progress) {

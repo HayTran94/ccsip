@@ -95,6 +95,7 @@ provisionAction() {
   if [ -n "$VARS" ]; then
     local HOST_VARS=$(asExports "${VARS[@]}")
   fi
+  DP_TAG_MEMBERS=$(status)
   until nc -zvw 1 ${IP_ADDR} 22; do
     sleep 2
   done
@@ -109,6 +110,7 @@ fi
 ${HOST_VARS}
 export DP_NAME=${NAME}
 export DP_IP_ADDR=${IP_ADDR}
+export DP_TAG_MEMBERS="${DP_TAG_MEMBERS}"
 if [ -f "/${NAME}/run.sh" ]; then
   . /${NAME}/run.sh ${INSTANCE_NAME}
 else
@@ -124,7 +126,7 @@ EOF
 }
 
 statusAction() {
-  echo $(status)
+  status
 }
 
 destroyAction() {
@@ -202,7 +204,7 @@ status() {
   if [ "$(numInstances)" = 0 ]; then
     echo "down"
   else
-    echo $(list | jq -r '.droplets[] | .name + " " + .networks.v4[1].ip_address')
+    list | jq -r '.droplets[] | .name + " " + .networks.v4[1].ip_address'
   fi
 }
 

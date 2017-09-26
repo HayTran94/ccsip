@@ -7,6 +7,7 @@ if ('true' == process.env.DISABLED) {
 const ASTERISK_HOST = process.env.ASTERISK_HOST || 'ccsip-asterisk-0.open-cc.org';
 const ASTERISK_API_USER = process.env.ASTERISK_API_USER;
 const ASTERISK_API_SECRET = process.env.ASTERISK_API_SECRET;
+const ASTERISK_IS_REGISTRAR = false;
 const amiIntegration = require('./src/integration/ami');
 const ariIntegration = require('./src/integration/ari');
 
@@ -35,18 +36,27 @@ callQueue(ddd.eventBus, callService, agentService);
 // init ari
 ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((ari) => {
 
+    agentService.assignExtension('1001', 'SIP/signaling-proxy/1001').then(() => {
+        agentService.makeAvailable('1001');
+    });
+
     // refresh agent state
     ari.endpoints.list().then((endpoints) => {
-        endpoints.filter(endpoint => endpoint.state !== 'unknown').forEach(endpoint => {
-            agentService.assignExtension(endpoint.resource, `${endpoint.technology}/${endpoint.resource}`)
-                .then(() => {
-                    if (endpoint.state === 'online') {
-                        agentService.makeAvailable(endpoint.resource);
-                    } else {
-                        agentService.makeOffline(endpoint.resource);
-                    }
-                });
-        });
+
+        if (ASTERISK_IS_REGISTRAR) {
+            endpoints.filter(endpoint => endpoint.state !== 'unknown').forEach(endpoint => {
+
+                agentService.assignExtension(endpoint.resource, `${endpoint.technology}/${endpoint.resource}`)
+                    .then(() => {
+                        if (endpoint.state === 'online') {
+                            agentService.makeAvailable(endpoint.resource);
+                        } else {
+                            agentService.makeOffline(endpoint.resource);
+                        }
+                    });
+            });
+        }
+
     }).then(() => {
 
         // start stasis app
@@ -131,6 +141,7 @@ amiIntegration(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET, {
         }
     }
 });
+
 
 // log unhandled rejections
 process.on('unhandledRejection', error => {
