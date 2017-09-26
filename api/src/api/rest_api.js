@@ -11,19 +11,25 @@ module.exports = (port, agentService) => {
         res.json(agentService.findAgents().map(agent => {
             return Object.assign({}, agent, {
                 calls: projections.findAgentCalls((agent.id))
-                    .map(call => {
-                        return Object.assign({}, call, {
-                            startedOnDate: formatDate(call.startedOn),
-                            answeredOnDate: formatDate(call.answeredOn),
-                            endedOnDate: formatDate(call.endedOn)
-                        });
-                    })
+                    .map(formatCall)
             });
         }));
     });
 
+    app.get('/calls', (req, res) => {
+        res.json(projections.listCalls().map(formatCall));
+    });
+
     app.listen(port);
 
+};
+
+const formatCall = (call) => {
+    return Object.assign({}, call, {
+        startedOnDate: formatDate(call.startedOn),
+        answeredOnDate: formatDate(call.answeredOn),
+        endedOnDate: formatDate(call.endedOn)
+    });
 };
 
 const formatDate = (timestamp) => {

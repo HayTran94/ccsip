@@ -8,9 +8,10 @@ services:
       - asterisk
     environment:
       - DISABLED=true
-      - ASTERISK_HOST=asterisk
+      - ASTERISK_HOST=$PRIVATE_ADDR
       - ASTERISK_API_USER
       - ASTERISK_API_SECRET
+      - RAW_ES_CONFIG='{"type":"redis","host":"ccsip-kamailio-0.open-cc.org"}'
     restart: on-failure
   asterisk:
     build: ./asterisk
