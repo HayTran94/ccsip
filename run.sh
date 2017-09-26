@@ -37,6 +37,8 @@ if [ "${INSTANCE_TYPE}" = "kamailio" ]; then
 else
 
   export SIGNALING_PROXY_HOST=$(echo $DP_TAG_MEMBERS | grep "kamailio" | awk '{print $2}')
+  # todo - use private ip for redis
+  export REDIS_HOST=${SIGNALING_PROXY_HOST}
 
   curl -X PUT \
      -d '{"Datacenter": "dc1", "Node": "'"${INSTANCE_NAME}"'", "Address": "'"${PRIVATE_ADDR}"'", "Service": {"Service": "'"${INSTANCE_TYPE}"'", "Port": 5060, "Tags": [ "udp" ]}}' \
@@ -51,7 +53,7 @@ export SIP_TERMINATION_PHONE_NUMBER="${TWILIO_SIP_TRUNK_PN}"
 REPLACE_VARS="'"$(declare -px | awk '{print $3}' | awk -F'=' '{print "${"$1"}"}' | tr '\n' ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"'"
 
 find /${DP_NAME}/ \
-  \( -name '*.cfg' -o -name '*.conf' \) \
+  \( -name '*.cfg' -o -name '*.conf' -o -name '*.yml' \) \
   -exec sh -c 'envsubst '"$REPLACE_VARS"' < {} > {}.tmp; mv {}.tmp {}' \;
 
 docker-compose -f /${DP_NAME}/docker-compose-${INSTANCE_TYPE}.yml rm -f

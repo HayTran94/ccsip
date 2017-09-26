@@ -2,16 +2,14 @@ version: '2'
 services:
   api:
     build: ./api
-    ports:
-      - 9999:9999
     depends_on:
       - asterisk
     environment:
-      - DISABLED=true
+      - DISABLED=false
       - ASTERISK_HOST=$PRIVATE_ADDR
       - ASTERISK_API_USER
       - ASTERISK_API_SECRET
-      - RAW_ES_CONFIG='{"type":"redis","host":"ccsip-kamailio-0.open-cc.org"}'
+      - RAW_ES_CONFIG={"type":"redis","host":"$REDIS_HOST"}
     restart: on-failure
   asterisk:
     build: ./asterisk
