@@ -23,11 +23,17 @@ help() {
 }
 
 updateDNSAction() {
-  INSTANCES=$(list | jq -r '.droplets[] | .name + "," + .networks.v4[1].ip_address')
-  for i in "${INSTANCES}"; do
-    INSTANCE_NAME=$(echo "${i}" | awk -F',' '{print $1}')
-    INSTANCE_IP=$(echo "${i}" | awk -F',' '{print $2}')
-  done
+  INSTANCE_NAME="${1}"
+  if [ -z "${INSTANCE_NAME}" ]; then
+    INSTANCES=$(list | jq -r '.droplets[] | .name + "," + .networks.v4[1].ip_address')
+    for i in ${INSTANCES}; do
+      INSTANCE_NAME=$(echo "${i}" | awk -F',' '{print $1}')
+      INSTANCE_IP=$(echo "${i}" | awk -F',' '{print $2}')
+      updateDNS "${INSTANCE_NAME}" "${INSTANCE_IP}"
+    done
+  else
+    updateDNS "${INSTANCE_NAME}" $(publicIPv4 "${INSTANCE_NAME}")
+  fi
 }
 
 updateDNS() {
@@ -77,8 +83,8 @@ deployAction() {
 }
 
 syncAction() {
-  INSTANCE_NAME="${1}"
-  IP=$(publicIPv4 "${INSTANCE_NAME}")
+  local INSTANCE_NAME="${1}"
+  local IP=$(publicIPv4 "${INSTANCE_NAME}")
   rsync -Pav --delete --exclude='.git/' --filter='dir-merge,- .gitignore' -e "ssh -o UserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -i /tmp/$SSH_KEY_NAME" ${WORKING_DIR} root@${IP}:/
 }
 
@@ -121,7 +127,7 @@ else
   fi
 fi
 EOF
-  rsync -Pav --delete --exclude='.git/' --filter='dir-merge,- .gitignore' -e "ssh -o UserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -i /tmp/$SSH_KEY_NAME" ${WORKING_DIR} root@${IP_ADDR}:/
+  syncAction ${INSTANCE_NAME}
   ssh root@${IP_ADDR} -o UserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -i /tmp/${SSH_KEY_NAME} -t "$PROVISION"
 }
 
@@ -221,6 +227,7 @@ dropletId() {
 destroy() {
   INSTANCE_NAME=$1
   if [ -z "${INSTANCE_NAME}" ]; then
+    terraform destroy ./terraform
     curl -X DELETE -H "Content-Type: application/json" \
       -H "Authorization: Bearer $DIGITALOCEAN_TOKEN" \
       "https://api.digitalocean.com/v2/droplets?tag_name=$NAME"
@@ -288,7 +295,7 @@ fi
 if [ "${ACTION}" = "up" ]; then
   deployAction
 elif [ "${ACTION}" = "dns" ]; then
-  updateDNSAction
+  updateDNSAction "${ARG}"
 elif [ "${ACTION}" = "sync" ]; then
   syncAction "${ARG}"
 elif [ "${ACTION}" = "provision" ]; then
