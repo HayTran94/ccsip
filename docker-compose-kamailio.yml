@@ -13,9 +13,17 @@ services:
     image: redis
     ports:
     - 6379:6379
+  kamailio_event_adapter:
+    build: ./kamailio_event_adapter
+    ports:
+      - 9991:9991
+      - 9992:9992
+    environment:
+      - PRIVATE_ADDR
   kamailio:
     build: ./kamailio
     ports:
       - 5060:5060/udp
     depends_on:
       - consul
+      - kamailio_event_adapter

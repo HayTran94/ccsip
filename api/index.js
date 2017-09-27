@@ -3,13 +3,14 @@ if ('true' == process.env.DISABLED) {
     process.exit(0);
 }
 
-// asterisk integration
-const ASTERISK_HOST = process.env.ASTERISK_HOST || 'ccsip-asterisk-0.open-cc.org';
+// sip integration
+const ASTERISK_HOST = process.env.ASTERISK_HOST || process.env.PRIVATE_ADDR || 'ccsip-asterisk-0.open-cc.org';
 const ASTERISK_API_USER = process.env.ASTERISK_API_USER;
 const ASTERISK_API_SECRET = process.env.ASTERISK_API_SECRET;
 const ASTERISK_IS_REGISTRAR = false;
 const amiIntegration = require('./src/integration/ami');
 const ariIntegration = require('./src/integration/ari');
+const meshage = require('meshage');
 
 // core
 const ddd = require('ddd-es-node');
@@ -36,9 +37,41 @@ callQueue(ddd.eventBus, callService, agentService);
 // init ari
 ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((ari) => {
 
-    agentService.assignExtension('1001', 'SIP/signaling-proxy/1001').then(() => {
-        agentService.makeAvailable('1001');
-    });
+    if (process.env.SIGNALING_PROXY_HOST) {
+        console.log('signaling proxy host set');
+        const staticNodes = [{
+            id: `asterisk-api-adapter`,
+            self: true,
+            host: process.env.PRIVATE_ADDR,
+            port: 9991
+        }, {
+            id: `kamailio-event-adapter`,
+            self: false,
+            host: process.env.SIGNALING_PROXY_HOST,
+            port: 9991
+        }];
+        new meshage.MessageRouter(
+            9992,
+            new meshage.GossiperCluster(9991, new meshage.StaticPeerProvider(staticNodes))
+        ).start((err, router) => {
+            if(err) {
+                console.log(err);
+            } else {
+                console.log('joined cluster');
+                router.register('kamailio-events', (command) => {
+                    console.log(`registering ${command.caller}`);
+                    if(command.method === 'SUBSCRIBE') {
+                        agentService.assignExtension(command.caller, `SIP/signaling-proxy/${command.caller}`).then(() => {
+                            agentService.makeAvailable(command.caller);
+                        });
+                    }
+                    return {info: `registered ${command.caller}`};
+                });
+            }
+        });
+    } else {
+        console.log('signaling proxy host not set');
+    }
 
     // refresh agent state
     ari.endpoints.list().then((endpoints) => {
@@ -125,7 +158,7 @@ amiIntegration(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET, {
         //console.log(JSON.stringify(event));
         switch (event.event) {
             case 'DeviceStateChange':
-                const id = event.device.split('/')[1];
+                const id = event.device.split('/').pop();
                 agentService.assignExtension(id, event.device)
                     .then(() => {
                         switch (event.state) {
