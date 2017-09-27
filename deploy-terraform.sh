@@ -19,6 +19,7 @@ help() {
   echo "  status     shows the status of the deployment"
   echo "  down       destroys the deployment"
   echo "  ssh        connects to the droplet via SSH"
+  echo "  exec       runs docker-compose exec"
   exit 0
 }
 
@@ -158,12 +159,17 @@ destroyAction() {
 
 sshAction() {
   INSTANCE_NAME="${1}"
+  CMD="${2}"
   IP=$(publicIPv4 "${INSTANCE_NAME}")
   if [ -z "${IP}" ]; then
     echo "failed to find instance named ${INSTANCE_NAME}"
     exit 1
   fi
-  ssh root@"${IP}" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/${SSH_KEY_NAME}
+  if [ -z "${CMD}" ]; then
+    ssh root@"${IP}" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/${SSH_KEY_NAME}
+  else
+    ssh root@"${IP}" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/${SSH_KEY_NAME} -t "${CMD}"
+  fi
 }
 
 getKeys() {
@@ -256,8 +262,15 @@ fi
 ACTION=$1;shift
 NAME=$(basename "${SCRIPT_PATH}")
 WORKING_DIR=$(pwd -P)
+REMOTE_CMD=""
 if [[ ! "${1}" == -* ]]; then
    ARG=$1;shift
+fi
+if [[ ! "${1}" == -* ]]; then
+   ARG_2=$1;shift
+fi
+if [[ ! "${1}" == -* ]]; then
+   ARG_3=$1;shift
 fi
 
 while getopts d:n:e:,l flag; do
@@ -306,6 +319,23 @@ elif [ "${ACTION}" = "down" ]; then
   destroyAction "${ARG}"
 elif [ "${ACTION}" = "ssh" ]; then
   sshAction "${ARG}"
+elif [ "${ACTION}" = "exec" ]; then
+  INSTANCE_TYPE=$(echo "${ARG}" | awk -F'-' '{print $1}')
+  COMPOSE_SERVICE=${ARG_2}
+  CMD=${ARG_3}
+  if [ -z "${CMD}" ]; then
+    CMD="${COMPOSE_SERVICE}"
+    COMPOSE_SERVICE=${INSTANCE_TYPE}
+  fi
+  if [ -z "${CMD}" ]; then
+    CMD="bash"
+  fi
+  echo "running ${CMD} on ${COMPOSE_SERVICE}"
+  sshAction "${ARG}" "cd /${NAME} && docker-compose -f docker-compose-${INSTANCE_TYPE}.yml exec ${COMPOSE_SERVICE} ${CMD}"
+elif [ "${ACTION}" = "logs" ]; then
+  INSTANCE_TYPE=$(echo "${ARG}" | awk -F'-' '{print $1}')
+  COMPOSE_SERVICE=${ARG_2}
+  sshAction "${ARG}" "cd /${NAME} && docker-compose -f docker-compose-${INSTANCE_TYPE}.yml logs --follow ${COMPOSE_SERVICE}"
 fi
 
 exit 0

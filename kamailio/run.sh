@@ -15,19 +15,17 @@ mkdir -p /tmp/opensipsdb
 
 cat << EOF > /tmp/opensipsdb/version
 table_name(str) table_version(int)
-subscriber:6
+subscriber:3
 location:6
 aliases:6
 EOF
 
 cat << EOF > /tmp/opensipsdb/subscriber
 username(str) password(str) ha1(str) domain(str) ha1b(str) rpid(str)
-jan:pass1:xxx:jan.sk:xxx:ZZZZ
-palo:pass2:xxx:palo.sk:xxx:ZZZZ
 EOF
 
 cat << EOF > /tmp/opensipsdb/location
-uid(str) aor(str) contact(str) server_id(int) received(str,null) expires(int) q(double) callid(str,null) cseq(int,null) flags(int) user_agent(str,null) instance(str,null)
+username(str) domain(str,null) contact(str,null) received(str) expires(int,null) q(double,null) callid(str,null) cseq(int,null) last_modified(str) flags(int) user_agent(str) socket(str)
 EOF
 
 chmod -R 777 /tmp/opensipsdb/
