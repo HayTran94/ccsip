@@ -8,6 +8,7 @@ const agentCallsView = {};
 
 exports.init = (eventBus) => {
     eventBus.subscribe((event) => {
+        console.log(event);
         if (event instanceof calls.CallInitiatedEvent) {
             callsView[event.streamId] = callsView[event.streamId] || {id: event.streamId};
             callsView[event.streamId].startedOn = event.timestamp;
