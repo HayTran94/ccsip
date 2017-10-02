@@ -4,7 +4,7 @@ const clusterPort = 9991;
 const staticNodes = [{
     id: `kamailio-event-adapter`,
     self: true,
-    host: process.env.PRIVATE_ADDR,
+    host: 'localhost',
     port: clusterPort
 }];
 

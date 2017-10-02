@@ -17,7 +17,7 @@
     "ddd-es-node": "0.0.13",
     "express": "^4.15.4",
     "json-stringify-safe": "^5.0.1",
-    "meshage": "0.0.9",
+    "meshage": "0.0.14",
     "redis": "^2.8.0",
     "superagent": "^3.6.0"
   },
