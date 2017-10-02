@@ -5,8 +5,10 @@ refreshDispatcher() {
   do
     sleep 1
   done
-  sleep 5
-  touch /etc/kamailio/dispatcher.list
+  while true; do
+    touch /etc/kamailio/dispatcher.list
+    sleep 30
+  done
 }
 
 mkdir -p /tmp/opensipsdb

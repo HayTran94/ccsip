@@ -59,10 +59,14 @@ ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((
             } else {
                 console.log('joined cluster');
                 router.register('kamailio-events', (command) => {
-                    console.log(`registering ${command.caller}`);
-                    if(command.method === 'SUBSCRIBE') {
+                    console.log(command);
+                    if(command.method === 'REGISTER') {
                         agentService.assignExtension(command.caller, `SIP/signaling-proxy/${command.caller}`).then(() => {
-                            agentService.makeAvailable(command.caller);
+                            if(command.expires === '0') {
+                                agentService.makeOffline(command.caller);
+                            } else {
+                                agentService.makeAvailable(command.caller);
+                            }
                         });
                     }
                     return {info: `registered ${command.caller}`};
@@ -159,6 +163,8 @@ amiIntegration(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET, {
         switch (event.event) {
             case 'DeviceStateChange':
                 const id = event.device.split('/').pop();
+                console.log('--->', id, event);
+                /*-
                 agentService.assignExtension(id, event.device)
                     .then(() => {
                         switch (event.state) {
@@ -171,6 +177,7 @@ amiIntegration(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET, {
                         }
                     });
                 break;
+                */
         }
     }
 });

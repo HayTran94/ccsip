@@ -319,6 +319,9 @@ elif [ "${ACTION}" = "down" ]; then
   destroyAction "${ARG}"
 elif [ "${ACTION}" = "ssh" ]; then
   sshAction "${ARG}"
+elif [ "${ACTION}" = "stop" ]; then
+  INSTANCE_TYPE=$(echo "${ARG}" | awk -F'-' '{print $1}')
+  sshAction "${ARG}" "cd /${NAME} && docker-compose -f docker-compose-${INSTANCE_TYPE}.yml stop"
 elif [ "${ACTION}" = "exec" ]; then
   INSTANCE_TYPE=$(echo "${ARG}" | awk -F'-' '{print $1}')
   COMPOSE_SERVICE=${ARG_2}

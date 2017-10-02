@@ -20,6 +20,7 @@ services:
       - 9992:9992
     environment:
       - PRIVATE_ADDR
+      - DEBUG=meshage
   kamailio:
     build: ./kamailio
     ports:
