@@ -5,6 +5,6 @@
 *nohist*
 .env
 .DS_Store
-node_modules
 .terraform
 *.tfstate*
+node_modules
