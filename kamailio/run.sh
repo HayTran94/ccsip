@@ -17,13 +17,14 @@ mkdir -p /tmp/opensipsdb
 
 cat << EOF > /tmp/opensipsdb/version
 table_name(str) table_version(int)
-subscriber:3
+subscriber:6
 location:6
 aliases:6
 EOF
 
 cat << EOF > /tmp/opensipsdb/subscriber
 username(str) password(str) ha1(str) domain(str) ha1b(str) rpid(str)
+1001:${SIP_EXTENSION_SECRET}:xxx:ccsip-kamailio-0.open-cc.org:xxx:1001
 EOF
 
 cat << EOF > /tmp/opensipsdb/location
