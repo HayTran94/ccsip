@@ -7,7 +7,7 @@ fi
 
 export ROOT_DOMAIN=open-cc.org
 
-. .work/dropler/deploy.sh "${@:1}" \
+. deploy-terraform.sh "${@:1}" \
   -e SIP_TERMINATION_URI \
   -e SIP_TERMINATION_USER \
   -e SIP_TERMINATION_SECRET \

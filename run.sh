@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 
-if ! ipcalc --version 2>&1 > /dev/null; then
-  apt-get install ipcalc
+if [ -z "$1" ]; then
+  echo "missing instance type"
+  exit 1
 fi
+
+INSTANCE_NAME=$1
+INSTANCE_TYPE=$(echo "${1}" | awk -F'-' '{print $1}')
+
 if ! jq --version 2>&1 > /dev/null; then
   apt-get install jq
 fi
 
-LOCAL_IP=$(ifconfig docker0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
-LOCAL_MASK=$(ifconfig docker0 | grep 'inet addr' | cut -d: -f4 | awk '{print $1}')
-LOCAL_NET=$(ipcalc ${LOCAL_IP}/${LOCAL_MASK} | grep Network | awk '{print $2}')
+PRIVATE_ADDR=$(ip addr show eth1 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)
 EXTERNAL_ADDR=${DP_IP_ADDR}
 
 if [ "${INSTANCE_TYPE}" = "kamailio" ]; then
@@ -51,13 +54,6 @@ find /${DP_NAME}/ \
   \( -name '*.cfg' -o -name '*.conf' -o -name '*.yml' \) \
   -exec sh -c 'envsubst '"$REPLACE_VARS"' < {} > {}.tmp; mv {}.tmp {}' \;
 
-if [ "$TWILIO_SIP_TRUNK_ORIG_URL_ADDR" = "sip:$EXTERNAL_ADDR" ]; then
-  echo "updated twilio sip trunk origination url"
-else
-  echo "failed to update twilio sip trunk origination url"
-  exit 1
-fi
-
-docker-compose -f /${DP_NAME}/docker-compose-kamailio.yml rm -f
-docker-compose -f /${DP_NAME}/docker-compose-kamailio.yml build
-docker-compose -f /${DP_NAME}/docker-compose-kamailio.yml up
+docker-compose -f /${DP_NAME}/docker-compose-${INSTANCE_TYPE}.yml rm -f
+docker-compose -f /${DP_NAME}/docker-compose-${INSTANCE_TYPE}.yml build
+docker-compose -f /${DP_NAME}/docker-compose-${INSTANCE_TYPE}.yml up -d
