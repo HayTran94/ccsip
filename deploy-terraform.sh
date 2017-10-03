@@ -216,7 +216,7 @@ status() {
   if [ "$(numInstances)" = 0 ]; then
     echo "down"
   else
-    list | jq -r '.droplets[] | .name + " " + .networks.v4[1].ip_address'
+    list | jq -r '.droplets[] | .name + " " + .networks.v4[1].ip_address + " " + .networks.v4[0].ip_address'
   fi
 }
 

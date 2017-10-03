@@ -38,7 +38,7 @@ callQueue(ddd.eventBus, callService, agentService);
 ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((ari) => {
 
     if (process.env.SIGNALING_PROXY_HOST) {
-        console.log('signaling proxy host set');
+        console.log(`signaling proxy host set to ${process.env.SIGNALING_PROXY_HOST}`);
         const staticNodes = [{
             id: `asterisk-api-adapter`,
             self: true,
@@ -60,7 +60,7 @@ ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((
                 console.log('joined cluster');
                 router.register('kamailio-events', (command) => {
                     console.log(command);
-                    if(command.method === 'REGISTER') {
+                    if(command.method === 'REGISTER_SUCCESS') {
                         agentService.assignExtension(command.caller, `SIP/signaling-proxy/${command.caller}`).then(() => {
                             if(command.expires === '0') {
                                 agentService.makeOffline(command.caller);

@@ -36,8 +36,7 @@ if [ "${INSTANCE_TYPE}" = "kamailio" ]; then
 
 else
 
-  export SIGNALING_PROXY_HOST=$(echo $DP_TAG_MEMBERS | grep "kamailio" | awk '{print $2}')
-  # todo - use private ip for redis and consul
+  export SIGNALING_PROXY_HOST=$(echo "$DP_TAG_MEMBERS" | grep "kamailio" | awk '{print $3}')
   export REDIS_HOST=${SIGNALING_PROXY_HOST}
   export CONSUL_HOST=${SIGNALING_PROXY_HOST}
 
