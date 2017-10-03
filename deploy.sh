@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-if [ ! -f .work/dropler/deploy.sh ]; then
-  mkdir -p .work
-  git clone https://github.com/github1/dropler.git .work/dropler
-fi
-
 export ROOT_DOMAIN=open-cc.org
 
 . deploy-terraform.sh "${@:1}" \
