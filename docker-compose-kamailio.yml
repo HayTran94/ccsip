@@ -29,6 +29,7 @@ services:
       - kamailio_event_adapter
     environment:
       - SIP_EXTENSION_SECRET
+      - SIP_TERMINATION_PHONE_NUMBER
   api_proxy:
     build: ./api_proxy
     ports:

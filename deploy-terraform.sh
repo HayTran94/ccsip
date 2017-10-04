@@ -338,7 +338,7 @@ elif [ "${ACTION}" = "exec" ]; then
 elif [ "${ACTION}" = "logs" ]; then
   INSTANCE_TYPE=$(echo "${ARG}" | awk -F'-' '{print $1}')
   COMPOSE_SERVICE=${ARG_2}
-  sshAction "${ARG}" "cd /${NAME} && docker-compose -f docker-compose-${INSTANCE_TYPE}.yml logs --follow ${COMPOSE_SERVICE}"
+  sshAction "${ARG}" "cd /${NAME} && docker-compose -f docker-compose-${INSTANCE_TYPE}.yml logs --follow --tail='100' ${COMPOSE_SERVICE}"
 fi
 
 exit 0

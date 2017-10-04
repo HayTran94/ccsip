@@ -16,6 +16,17 @@ module.exports = (port, agentService) => {
         }));
     });
 
+    app.get('/route', (req, res) => {
+        const agents = agentService.findAgents().filter(agent => {
+            return agent.status === 'available';
+        }).map(agent => {
+            return agent.id
+        });
+        res.send(agents.length === 0
+            ? 'queue'
+            : agents[Math.floor(Math.random() * agents.length)]);
+    });
+
     app.get('/calls', (req, res) => {
         res.json(projections.listCalls().map(formatCall));
     });
