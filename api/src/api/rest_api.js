@@ -17,6 +17,15 @@ module.exports = (port, agentService) => {
     });
 
     app.get('/route', (req, res) => {
+        console.log('routeparams', req.query);
+        if(req.query.dest) {
+            const dest = Buffer.from(req.query.dest, 'base64').toString();
+            console.log('dest', dest);
+        }
+        if(req.query.from) {
+            const from = Buffer.from(req.query.from, 'base64').toString();
+            console.log('from', from);
+        }
         const agents = agentService.findAgents().filter(agent => {
             return agent.status === 'available';
         }).map(agent => {

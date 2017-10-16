@@ -70,8 +70,9 @@ createTag() {
 
 deployAction() {
   SSH_PUB_KEY_ID=$(getKeyID)
-  if [ "$SSH_PUB_KEY_ID" == "null" ]; then
+  if [ "$SSH_PUB_KEY_ID" == "null" -o ! -f "/tmp/${SSH_KEY_NAME}" ]; then
     createKey
+    SSH_PUB_KEY_ID=$(getKeyID)
   fi
   createTag "${NAME}"
   export TF_VAR_ssh_key_id="${SSH_PUB_KEY_ID}"
