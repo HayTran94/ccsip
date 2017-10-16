@@ -12,7 +12,7 @@ new meshage.MessageRouter(
     9992,
     new meshage.GossiperCluster(clusterPort, new meshage.StaticPeerProvider(staticNodes))
 ).start((err, router) => {
-    router.register('kamailio-events', (command) => {
+    router.register('external-device-events', (command) => {
         console.log(command);
         return { echo: { command } };
     });

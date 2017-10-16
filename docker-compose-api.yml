@@ -1,0 +1,17 @@
+version: '2'
+services:
+  api:
+    build: ./api
+    ports:
+      - 9999:9999
+      - 9991:9991
+      - 9992:9992
+    environment:
+      - DISABLED=false
+      - SIGNALING_PROXY_HOST
+      - DEBUG=meshage
+      - INSTANCE_NAME
+      - INSTANCE_TYPE
+      - PRIVATE_ADDR
+      - CONSUL_HOST
+      #- RAW_ES_CONFIG={"type":"redis","host":"$REDIS_HOST"}

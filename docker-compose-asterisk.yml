@@ -1,22 +1,18 @@
 version: '2'
 services:
-  api:
-    build: ./api
+  asterisk_event_adapter:
+    build: ./asterisk_event_adapter
     depends_on:
       - asterisk
     ports:
-      - 9999:9999
       - 9991:9991
       - 9992:9992
     environment:
-      - DISABLED=false
-      - EXTERNAL_ADDR
       - PRIVATE_ADDR
       - ASTERISK_API_USER
       - ASTERISK_API_SECRET
       - SIGNALING_PROXY_HOST
       - DEBUG=meshage
-      #- RAW_ES_CONFIG={"type":"redis","host":"$REDIS_HOST"}
     restart: on-failure
   asterisk:
     build: ./asterisk

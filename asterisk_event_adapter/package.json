@@ -1,0 +1,14 @@
+{
+  "name": "ccsip-asterisk-event-adapter",
+  "version": "1.0.0",
+  "description": "ccsip-asterisk-event-adapter",
+  "main": "index.js",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ami-io": "^1.1.2",
+    "ari-client": "^1.1.1",
+    "meshage": "0.0.14",
+    "superagent": "^3.6.0"
+  }
+}

@@ -32,5 +32,5 @@ bind *:80
     default_backend nodes-http
 
 backend nodes-http
-    {{range service "asterisk"}}server {{.Node}} {{.Address}}:9999 check
+    {{range service "api"}}server {{.Node}} {{.Address}}:9999 check
     {{end}}

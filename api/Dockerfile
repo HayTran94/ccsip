@@ -2,8 +2,12 @@ FROM node:latest
 
 WORKDIR /opt/app
 
+RUN apt-get update && apt-get -y install netcat
+
 ADD . /opt/app
 RUN npm install --unsafe-perm
-EXPOSE 9999
 
-CMD node index.js
+COPY ./run.sh /run.sh
+RUN chmod +x /run.sh
+
+CMD /run.sh
