@@ -7,7 +7,9 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-module.exports = (port, authToken, messageRouter) => {
+module.exports = (port, accountSid, authToken, messageRouter) => {
+
+    const twilioClient = twilio(accountSid, authToken);
 
     app.use(cookieParser());
 
@@ -61,6 +63,20 @@ module.exports = (port, authToken, messageRouter) => {
         }
     });
 
-    app.listen(port);
+    app.listen(port, () => {
+
+        messageRouter.register('domain-events', (command) => {
+            console.log('domain-events:', command);
+            if(command.event.name === 'ChatMessagePostedEvent') {
+                if(command.event.to !== 'inbound') {
+                    twilioClient.messages.create({
+                        to: command.event.to,
+                        body: event.message
+                    });
+                }
+            }
+        });
+
+    });
 
 };

@@ -109,7 +109,7 @@ const onDomainEvent = (ariIntegration, ari, messageRouter, event) => {
                     });
             }, 500);
         }
-    } else if (event.name === 'CallPlacedOnHoldEvent') {
+    } else if (event.name === 'InteractionPlacedOnHoldEvent') {
         // play hold music
         // queue-callswaiting
         if (channels[event.streamId]) {
@@ -118,7 +118,7 @@ const onDomainEvent = (ariIntegration, ari, messageRouter, event) => {
                     channelSounds[event.streamId] = (channelSounds[event.streamId] || []).concat(playbacks.map(playback => playback.id));
                 });
         }
-    } else if (event.name === 'CallRoutedEvent') {
+    } else if (event.name === 'InteractionRoutedEvent') {
         // route to extension
         if (channels[event.streamId]) {
             ariIntegration.originate(ari, event.endpoint, channels[event.streamId], {

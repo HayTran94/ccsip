@@ -23,6 +23,7 @@ services:
       - CLUSTER_PORT=9993
       - SERVICE_PORT=9994
       - TWILIO_SERVICE_PORT=9999
+      - TWILIO_ACCOUNT_SID
       - TWILIO_AUTH_TOKEN
       - SIGNALING_PROXY_HOST
       - DEBUG=meshage

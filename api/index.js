@@ -10,10 +10,12 @@ const meshage = require('meshage');
 const ddd = require('ddd-es-node');
 const projections = require('./src/core/projections');
 const calls = require('./src/core/call');
+const chats = require('./src/core/chat');
 const agents = require('./src/core/agent');
+const chatService = new chats.ChatService(ddd.entityRepository);
 const callService = new calls.CallService(ddd.entityRepository);
 const agentService = new agents.AgentService(ddd.entityRepository, ddd.eventBus);
-const callQueue = require('./src/core/call_queue');
+const interactionQueue = require('./src/core/interaction_queue');
 
 // api
 const restAPI = require('./src/api/rest_api');
@@ -21,11 +23,14 @@ const restAPI = require('./src/api/rest_api');
 // init projections
 projections.init(ddd.eventBus);
 
-// init call queue
-callQueue(ddd.eventBus, callService, agentService);
+// init interaction queue
+interactionQueue(ddd.eventBus, agentService, {
+    voice: callService,
+    chat: chatService
+});
 
 // init restAPI
-restAPI(9999, agentService, callService);
+restAPI(9999, agentService);
 
 if (process.env.SIGNALING_PROXY_HOST) {
     console.log(`signaling proxy host set to ${process.env.SIGNALING_PROXY_HOST}`);
@@ -79,13 +84,13 @@ if (process.env.SIGNALING_PROXY_HOST) {
                         } else if (command.method === 'ACK') {
                             callService.answer(callId, `SIP/signaling-proxy/${command.callee}`);
                         } else if (command.method === 'BYE') {
-                            callService.endCall(callId);
+                            callService.endInteraction(callId);
                         }*/
                     } else {
                         if (command.action === 'call-started') {
                             callService.initiateCall(callId, command.from, command.to);
                         } else if (command.action === 'call-ended') {
-                            callService.endCall(callId);
+                            callService.endInteraction(callId);
                         } else if (command.action === 'announce-playing-complete') {
                             callService.placeOnHold(callId);
                         } else if (command.action === 'answered') {
@@ -94,9 +99,15 @@ if (process.env.SIGNALING_PROXY_HOST) {
                     }
                 } else if (command.type === 'sms-message') {
                     if (command.action === 'started') {
-                        // refactor calls/queues to support multiple channels
+                        chatService.initiateChat(
+                            command.conversationId,
+                            command.from,
+                            command.messageBody);
                     } else if (command.action === 'received') {
-
+                        chatService.postMessage(
+                            command.conversationId,
+                            command.from,
+                            command.messageBody);
                     }
                 }
             });

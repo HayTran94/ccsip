@@ -5,7 +5,7 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-module.exports = (port, agentService, callService) => {
+module.exports = (port, agentService) => {
 
     app.get('/agents', (req, res) => {
         res.json(agentService.findAgents().map(agent => {
