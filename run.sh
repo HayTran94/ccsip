@@ -23,6 +23,7 @@ if [ "${INSTANCE_TYPE}" = "kamailio" ]; then
   TWILIO_SIP_TRUNK_SID=$(echo ${TWILIO_SIP_TRUNK} | jq .sid -r)
   TWILIO_SIP_TRUNK_PN_URLS_LINK=$(echo ${TWILIO_SIP_TRUNK} | jq .links.phone_numbers -r)
   TWILIO_SIP_TRUNK_PN=$(curl -s ${TWILIO_SIP_TRUNK_PN_URLS_LINK} -u "${TWILIO_CREDS}" | jq .phone_numbers[0].phone_number -r)
+  TWILIO_SIP_TRUNK_PN_IN_URL=$(curl -s ${TWILIO_SIP_TRUNK_PN_URLS_LINK} -u "${TWILIO_CREDS}" | jq .phone_numbers[0].links.phone_number -r )
   TWILIO_SIP_TRUNK_ORIG_URLS_LINK=$(echo ${TWILIO_SIP_TRUNK} | jq .links.origination_urls -r)
   TWILIO_SIP_TRUNK_ORIG_URL_URL=$(curl -s ${TWILIO_SIP_TRUNK_ORIG_URLS_LINK} -u "${TWILIO_CREDS}" | jq .origination_urls[0].url -r)
   TWILIO_SIP_TRUNK_ORIG_URL_ADDR=$(curl -sX POST ${TWILIO_SIP_TRUNK_ORIG_URL_URL} -u "${TWILIO_CREDS}" -d "SipUrl=sip:${EXTERNAL_ADDR}" | jq .sip_url -r)
@@ -33,6 +34,11 @@ if [ "${INSTANCE_TYPE}" = "kamailio" ]; then
     echo "failed to update twilio sip trunk origination url"
     exit 1
   fi
+
+  # update smsURL
+  curl -sX POST "${TWILIO_SIP_TRUNK_PN_IN_URL}" -u "${TWILIO_CREDS}" -d "SmsUrl=http://${EXTERNAL_ADDR}:9999/twilio/inbound/sms"
+
+  export SIGNALING_PROXY_HOST=${PRIVATE_ADDR}
 
 else
 

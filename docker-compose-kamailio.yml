@@ -12,6 +12,20 @@ services:
     image: redis
     ports:
     - 6379:6379
+  twilio_event_adapter:
+    build: ./twilio_event_adapter
+    ports:
+      - 9993:9993
+      - 9994:9994
+      - 9999:9999
+    environment:
+      - PRIVATE_ADDR
+      - CLUSTER_PORT=9993
+      - SERVICE_PORT=9994
+      - TWILIO_SERVICE_PORT=9999
+      - TWILIO_AUTH_TOKEN
+      - SIGNALING_PROXY_HOST
+      - DEBUG=meshage
   kamailio_event_adapter:
     build: ./kamailio_event_adapter
     ports:
