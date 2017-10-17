@@ -9,7 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "meshage": "0.0.14"
+    "meshage": "0.0.18"
   },
   "devDependencies": {
     "nodemon": "^1.12.1"

@@ -47,11 +47,13 @@ if (process.env.SIGNALING_PROXY_HOST) {
         if (err) {
             console.log(err);
         } else {
-            console.log('joined cluster');
+
             router.register('external-device-events', (command) => {
-                console.log('external-device-event:', command);
+
+                const callId = /^([^@]+)/.exec(command.callID || command.callId)[0];
+
                 if (command.type === 'sip-phone') {
-                    if(command.action === 'register') {
+                    if (command.action === 'register') {
                         const agentId = command.caller; // caller is the one registering
                         const endpoint = `SIP/signaling-proxy/${command.caller}`;
                         agentService.assignExtension(agentId, endpoint).then(() => {
@@ -63,21 +65,45 @@ if (process.env.SIGNALING_PROXY_HOST) {
                         });
                     }
                 } else if (command.type === 'sip-call') {
-                    if(command.action === 'call-started') {
-                        callService.initiateCall(command.callId, command.from, command.to);
-                    } else if(command.action === 'call-ended') {
-                        callService.endCall(command.callId);
-                    } else if(command.action === 'announce-playing-complete') {
-                        callService.placeOnHold(command.callId);
-                    } else if(command.action === 'answered') {
-                        callService.answer(command.callId, command.endpoint);
+                    if (command.source === 'kamailio') {
+                        /**
+                         if (command.action === 'dispatch') {
+                            const matches = /^sip:([^@]+)@.*$/.exec(command.callee);
+                            if (matches !== null && matches.length > 0) {
+                                const endpoint = `SIP/signaling-proxy/${matches[1]}`;
+                                callService.initiateCall(callId, command.caller, endpoint)
+                                    .then(() => {
+                                        callService.routeTo(callId, endpoint);
+                                    });
+                            }
+                        } else if (command.method === 'ACK') {
+                            callService.answer(callId, `SIP/signaling-proxy/${command.callee}`);
+                        } else if (command.method === 'BYE') {
+                            callService.endCall(callId);
+                        }*/
+                    } else {
+                        if (command.action === 'call-started') {
+                            callService.initiateCall(callId, command.from, command.to);
+                        } else if (command.action === 'call-ended') {
+                            callService.endCall(callId);
+                        } else if (command.action === 'announce-playing-complete') {
+                            callService.placeOnHold(callId);
+                        } else if (command.action === 'answered') {
+                            callService.answer(callId, command.endpoint);
+                        }
+                    }
+                } else if (command.type === 'sms-message') {
+                    if (command.action === 'started') {
+                        // refactor calls/queues to support multiple channels
+                    } else if (command.action === 'received') {
+
                     }
                 }
             });
             ddd.eventBus.subscribe(event => {
                 router.broadcast({
                     stream: 'domain-events',
-                    partitionKey: 'na',
+                    partitionKey: event.streamId,
                     event: event
                 });
             });

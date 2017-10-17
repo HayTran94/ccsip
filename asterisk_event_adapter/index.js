@@ -46,30 +46,40 @@ ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((
                     if (event.args[0] === 'dialed') {
                         return;
                     }
-                    channel.answer((err) => {
-                        if (err) {
-                            throw err;
-                        }
-                        channels[channel.id] = channel;
-                        channel.on('StasisEnd', (event, channel) => {
-                            router.send({
-                                stream: 'external-device-events',
-                                partitionKey: channel.id,
-                                type: 'sip-call',
-                                callId: channel.id,
-                                action: 'call-ended'
+
+                    ari.channels.getChannelVar({channelId: channel.id, variable: 'CALLID'},
+                        (err, variable) => {
+
+                            const callId = /^([^@]+)/.exec(variable.value)[0];
+
+                            channel.answer((err) => {
+                                if (err) {
+                                    throw err;
+                                }
+                                channels[callId] = channel;
+                                channel.on('StasisEnd', () => {
+                                    router.send({
+                                        stream: 'external-device-events',
+                                        partitionKey: callId,
+                                        type: 'sip-call',
+                                        callId: callId,
+                                        action: 'call-ended'
+                                    });
+                                });
+                                router.send({
+                                    stream: 'external-device-events',
+                                    partitionKey: callId,
+                                    type: 'sip-call',
+                                    callId: callId,
+                                    from: event.channel.caller.number,
+                                    to: event.channel.dialplan.exten,
+                                    action: 'call-started'
+                                });
                             });
-                        });
-                        router.send({
-                            stream: 'external-device-events',
-                            partitionKey: channel.id,
-                            type: 'sip-call',
-                            callId: channel.id,
-                            from: event.channel.caller.number,
-                            to: event.channel.dialplan.exten,
-                            action: 'call-started'
-                        });
-                    });
+
+                        }
+                    );
+
                 });
             }
         });
@@ -82,7 +92,7 @@ ariIntegration.init(ASTERISK_HOST, ASTERISK_API_USER, ASTERISK_API_SECRET).get((
 });
 
 const onDomainEvent = (ariIntegration, ari, messageRouter, event) => {
-    if (event.type === 'QueueProgress') {
+    if (event.name === 'QueueProgress') {
         if (channels[event.streamId] && !channelSounds[event.streamId]) {
             // add delay so beginning of message isn't cut off
             setTimeout(() => {

@@ -7,41 +7,6 @@ app.use(bodyParser.json());
 
 module.exports = (port, agentService, callService) => {
 
-    app.post('/command', (req, res) => {
-        const cmd = req.body;
-        let promise = null;
-        switch (cmd.name) {
-            case 'AssignAgentExtension':
-                promise = agentService.assignExtension(cmd.agentId, cmd.extension);
-                break;
-            case 'MakeAgentOffline':
-                promise = agentService.makeOffline(cmd.agentId);
-                break;
-            case 'MakeAgentAvailable':
-                promise = agentService.makeAvailable(cmd.agentId);
-                break;
-            case 'InitiateCall':
-                promise = callService.initiateCall(cmd.callId, cmd.from, cmd.to);
-                break;
-            case 'EndCall':
-                promise = callService.endCall(cmd.callId);
-                break;
-            case 'HoldCall':
-                promise = callService.placeOnHold(cmd.callId);
-                break;
-            case 'AnswerCall':
-                promise = callService.answer(cmd.callId, cmd.answeredByEndpoint);
-                break;
-            default:
-                promise = Promise.resolve();
-        }
-        promise.then(() => {
-            res.json({status: 200});
-        }).catch(err => {
-            res.json({status: 500, error: err.message});
-        });
-    });
-
     app.get('/agents', (req, res) => {
         res.json(agentService.findAgents().map(agent => {
             return Object.assign({}, agent, {
