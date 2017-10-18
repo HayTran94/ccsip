@@ -25,6 +25,7 @@ services:
       - TWILIO_SERVICE_PORT=9999
       - TWILIO_ACCOUNT_SID
       - TWILIO_AUTH_TOKEN
+      - SIP_TERMINATION_PHONE_NUMBER
       - SIGNALING_PROXY_HOST
       - DEBUG=meshage
   kamailio_event_adapter:

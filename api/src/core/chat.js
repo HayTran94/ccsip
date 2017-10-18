@@ -1,6 +1,6 @@
 const interaction = require('./interaction');
 const ddd = require('ddd-es-node');
-const EntityEvent = ddd.Entity;
+const EntityEvent = ddd.EntityEvent;
 
 class ChatInitiatedEvent extends interaction.InteractionInitiatedEvent {
     constructor(from, initialMessage) {

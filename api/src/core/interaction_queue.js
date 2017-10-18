@@ -13,10 +13,10 @@ module.exports = (eventBus, agentService, interactionServices) => {
                 return;
             }
 
-            const release = releaseAgent[event.streamId] = agentService.untilAvailableAgent((agent) => {
+            releaseAgent[event.streamId] = agentService.untilAvailableAgent((agent) => {
                 console.log('reserved agent', agent);
                 interactionService.routeTo(event.streamId, agent.extension);
-            }, (numChecks, timeWaiting) => {
+            }, (numChecks, timeWaiting, cancel) => {
                 eventBus.emit({
                     name: 'QueueProgress',
                     streamId: event.streamId,
@@ -26,6 +26,10 @@ module.exports = (eventBus, agentService, interactionServices) => {
                     event.channel,
                     event.streamId,
                     timeWaiting);
+                if(event.channel === 'chat') {
+                    interactionService.postMessage(event.streamId, 'system', 'Please wait...');
+                    cancel();
+                }
             });
 
         } else if (event instanceof interactions.InteractionEndedEvent) {

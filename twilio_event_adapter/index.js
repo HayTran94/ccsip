@@ -3,6 +3,7 @@ const SERVICE_PORT = process.env.SERVICE_PORT || 9992;
 const TWILIO_SERVICE_PORT = process.env.TWILIO_SERVICE_PORT || 9999;
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_PHONE_NUMBER = process.env.SIP_TERMINATION_PHONE_NUMBER;
 
 const twilioHooks = require('./src/integration/twilio_hooks');
 
@@ -28,7 +29,12 @@ if (process.env.SIGNALING_PROXY_HOST) {
         if (err) {
             console.log(err);
         } else {
-            twilioHooks(TWILIO_SERVICE_PORT, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, router);
+            twilioHooks(
+                TWILIO_SERVICE_PORT,
+                TWILIO_ACCOUNT_SID,
+                TWILIO_AUTH_TOKEN,
+                TWILIO_PHONE_NUMBER,
+                router);
         }
     });
 } else {

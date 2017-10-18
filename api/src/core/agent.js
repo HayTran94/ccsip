@@ -80,7 +80,7 @@ class AgentService {
                 const agents = this.findAvailableAgents();
                 if (progress) {
                     const timeWaiting = new Date().getTime() - startTime;
-                    progress(count, timeWaiting);
+                    progress(count, timeWaiting, release);
                 }
                 if (agents.length === 0) {
                     count++;

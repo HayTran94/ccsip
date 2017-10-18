@@ -7,9 +7,24 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-module.exports = (port, accountSid, authToken, messageRouter) => {
+module.exports = (port, accountSid, authToken, phoneNumber, messageRouter) => {
 
     const twilioClient = twilio(accountSid, authToken);
+
+    messageRouter.register('domain-events', (command) => {
+        console.log('domain-events:', command);
+        if(command.event.name === 'ChatMessagePostedEvent') {
+            if(command.event.to !== 'inbound') {
+                twilioClient.messages.create({
+                    to: command.event.to,
+                    from: phoneNumber,
+                    body: command.event.message
+                }).catch(err => {
+                    console.log(err);
+                });
+            }
+        }
+    });
 
     app.use(cookieParser());
 
@@ -50,7 +65,7 @@ module.exports = (port, accountSid, authToken, messageRouter) => {
                     stream: 'external-device-events',
                     partitionKey: conversationId,
                     type: 'sms-message',
-                    action: initial ? 'started' : 'received',
+                    action: 'received',
                     from: incomingPhoneNumber,
                     conversationId: conversationId,
                     messageBody: text
@@ -63,20 +78,6 @@ module.exports = (port, accountSid, authToken, messageRouter) => {
         }
     });
 
-    app.listen(port, () => {
-
-        messageRouter.register('domain-events', (command) => {
-            console.log('domain-events:', command);
-            if(command.event.name === 'ChatMessagePostedEvent') {
-                if(command.event.to !== 'inbound') {
-                    twilioClient.messages.create({
-                        to: command.event.to,
-                        body: event.message
-                    });
-                }
-            }
-        });
-
-    });
+    app.listen(port);
 
 };

@@ -16,6 +16,7 @@ const chatService = new chats.ChatService(ddd.entityRepository);
 const callService = new calls.CallService(ddd.entityRepository);
 const agentService = new agents.AgentService(ddd.entityRepository, ddd.eventBus);
 const interactionQueue = require('./src/core/interaction_queue');
+const chatBot = require('./src/core/chat_bot');
 
 // api
 const restAPI = require('./src/api/rest_api');
@@ -28,6 +29,9 @@ interactionQueue(ddd.eventBus, agentService, {
     voice: callService,
     chat: chatService
 });
+
+// init chat bot
+chatBot(ddd.eventBus, chatService);
 
 // init restAPI
 restAPI(9999, agentService);
@@ -98,16 +102,19 @@ if (process.env.SIGNALING_PROXY_HOST) {
                         }
                     }
                 } else if (command.type === 'sms-message') {
-                    if (command.action === 'started') {
-                        chatService.initiateChat(
-                            command.conversationId,
-                            command.from,
-                            command.messageBody);
-                    } else if (command.action === 'received') {
-                        chatService.postMessage(
-                            command.conversationId,
-                            command.from,
-                            command.messageBody);
+                    if (command.action === 'received') {
+                        const chat = projections.findChat(command.conversationId);
+                        if(chat) {
+                            chatService.postMessage(
+                                command.conversationId,
+                                command.from,
+                                command.messageBody);
+                        } else {
+                            chatService.initiateChat(
+                                command.conversationId,
+                                command.from,
+                                command.messageBody);
+                        }
                     }
                 }
             });

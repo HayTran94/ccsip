@@ -12,5 +12,4 @@ new meshage.MessageRouter(
     9992,
     new meshage.GossiperCluster(clusterPort, new meshage.StaticPeerProvider(staticNodes))
 ).start((err, router) => {
-    router.unregister('external-device-events');
 });

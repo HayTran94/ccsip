@@ -10,8 +10,8 @@ module.exports = (port, agentService) => {
     app.get('/agents', (req, res) => {
         res.json(agentService.findAgents().map(agent => {
             return Object.assign({}, agent, {
-                calls: projections.findAgentCalls((agent.id))
-                    .map(formatCall)
+                interactions: projections.findAgentInteractions((agent.id))
+                    .map(formatInteraction)
             });
         }));
     });
@@ -36,20 +36,31 @@ module.exports = (port, agentService) => {
             : agents[Math.floor(Math.random() * agents.length)]);
     });
 
+    app.get('/interactions', (req, res) => {
+        res.json(projections.listInteractions().map(formatInteraction));
+    });
+
     app.get('/calls', (req, res) => {
-        res.json(projections.listCalls().map(formatCall));
+        res.json(projections.listCalls().map(formatInteraction));
     });
 
     app.listen(port);
 
 };
 
-const formatCall = (call) => {
+const formatInteraction = (call) => {
     return Object.assign({}, call, {
-        startedOnDate: formatDate(call.startedOn),
-        answeredOnDate: formatDate(call.answeredOn),
-        endedOnDate: formatDate(call.endedOn)
+        startedOn: formatDateTimestamp(call.startedOn),
+        answeredOn: formatDateTimestamp(call.answeredOn),
+        endedOn: formatDateTimestamp(call.endedOn)
     });
+};
+
+const formatDateTimestamp = (timestamp) => {
+    return timestamp && timestamp !== null ? {
+        timestamp: timestamp,
+        date: formatDate(timestamp)
+    } : null;
 };
 
 const formatDate = (timestamp) => {
