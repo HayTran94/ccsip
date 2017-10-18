@@ -9,14 +9,19 @@ module.exports = (eventBus, agentService, interactionServices) => {
             const interactionService = interactionServices[event.channel];
 
             if (event instanceof calls.CallInitiatedEvent && event.toPhoneNumber.indexOf('SIP/signaling-proxy/') > -1) {
-                // only queue if call not routed directly to an extension
+                // only queue if call not routed directly to an endpoint
+                return;
+            }
+
+            if(event.channel === 'chat') {
+                console.log('ignoring chat interaction');
                 return;
             }
 
             releaseAgent[event.streamId] = agentService.untilAvailableAgent((agent) => {
                 console.log('reserved agent', agent);
-                interactionService.routeTo(event.streamId, agent.extension);
-            }, (numChecks, timeWaiting, cancel) => {
+                interactionService.routeTo(event.streamId, agent[event.channel].endpoint);
+            }, (numChecks, timeWaiting) => {
                 eventBus.emit({
                     name: 'QueueProgress',
                     streamId: event.streamId,
@@ -26,10 +31,8 @@ module.exports = (eventBus, agentService, interactionServices) => {
                     event.channel,
                     event.streamId,
                     timeWaiting);
-                if(event.channel === 'chat') {
-                    interactionService.postMessage(event.streamId, 'system', 'Please wait...');
-                    cancel();
-                }
+            }, {
+                channel: event.channel
             });
 
         } else if (event instanceof interactions.InteractionEndedEvent) {

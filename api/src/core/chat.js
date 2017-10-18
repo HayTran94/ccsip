@@ -10,7 +10,7 @@ class ChatInitiatedEvent extends interaction.InteractionInitiatedEvent {
     }
 }
 
-class ChatMessagePostedEvent extends EntityEvent {
+class ChatMessagePostedEvent extends interaction.InteractionEvent {
     constructor(from, to, message) {
         super();
         this.from = from;

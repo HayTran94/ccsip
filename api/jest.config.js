@@ -5,7 +5,7 @@ module.exports = {
     'js',
     'node'
   ],
-  testRegex: '/spec/.*\\.(js)x?$',
+  testRegex: '/spec/.*\\.spec\\.(js)x?$',
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.js'

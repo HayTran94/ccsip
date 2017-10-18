@@ -1,11 +1,12 @@
 const projections = require('../core/projections');
+const interactions = require('../core/interaction');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-module.exports = (port, agentService) => {
+module.exports = (port, agentService, chatService, eventStore) => {
 
     app.get('/agents', (req, res) => {
         res.json(agentService.findAgents().map(agent => {
@@ -26,8 +27,30 @@ module.exports = (port, agentService) => {
             const from = Buffer.from(req.query.from, 'base64').toString();
             console.log('from', from);
         }
-        const agents = agentService.findAgents().filter(agent => {
-            return agent.status === 'available';
+        const agents = agentService.findAvailableAgents({
+            channel: 'voice'
+        }).map(agent => {
+            return agent.id
+        });
+        // bypass this
+        res.send('queue');
+        /**
+         res.send(agents.length === 0
+         ? 'queue'
+         : agents[Math.floor(Math.random() * agents.length)]);
+         */
+    });
+
+    app.get('/route/:channel', (req, res) => {
+        console.log(req.params, req.query);
+        if(req.params.channel === 'chat') {
+            if(req.query.queue === 'bot') {
+                res.send('CCaaSBot');
+                return;
+            }
+        }
+        const agents = agentService.findAvailableAgents({
+            channel: req.params.channel
         }).map(agent => {
             return agent.id
         });
@@ -40,19 +63,45 @@ module.exports = (port, agentService) => {
         res.json(projections.listInteractions().map(formatInteraction));
     });
 
-    app.get('/calls', (req, res) => {
-        res.json(projections.listCalls().map(formatInteraction));
+    app.get('/interactions/:channel', (req, res) => {
+        res.json(projections.listInteractions(req.params.channel).map(formatInteraction));
+    });
+
+    app.get('/events', (req, res) => {
+        const events = [];
+        eventStore.replayAll((event) => {
+            events.push(event);
+        }, () => {
+            res.json(events.map(event => {
+                if (event instanceof interactions.InteractionEvent) {
+                    const interaction = projections.findInteraction(event.streamId);
+                    if (interaction) {
+                        return Object.assign({}, event, {
+                            interaction: interaction
+                        });
+                    }
+                }
+                return event;
+            }));
+        });
+    });
+
+    app.post('/chat/:chatId', (req, res) => {
+        chatService.postMessage(req.params.chatId, req.body.from, req.body.message)
+            .then(() => {
+                res.json({});
+            });
     });
 
     app.listen(port);
 
 };
 
-const formatInteraction = (call) => {
-    return Object.assign({}, call, {
-        startedOn: formatDateTimestamp(call.startedOn),
-        answeredOn: formatDateTimestamp(call.answeredOn),
-        endedOn: formatDateTimestamp(call.endedOn)
+const formatInteraction = (interaction) => {
+    return Object.assign({}, interaction, {
+        startedOn: formatDateTimestamp(interaction.startedOn),
+        answeredOn: formatDateTimestamp(interaction.answeredOn),
+        endedOn: formatDateTimestamp(interaction.endedOn)
     });
 };
 
@@ -60,7 +109,7 @@ const formatDateTimestamp = (timestamp) => {
     return timestamp && timestamp !== null ? {
         timestamp: timestamp,
         date: formatDate(timestamp)
-    } : null;
+    } : {};
 };
 
 const formatDate = (timestamp) => {

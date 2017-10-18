@@ -12,7 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.18.1",
-    "ddd-es-node": "0.0.13",
+    "ddd-es-node": "0.0.14",
     "express": "^4.15.4",
     "json-stringify-safe": "^5.0.1",
     "meshage": "0.0.18",

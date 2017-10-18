@@ -2,34 +2,40 @@ const ddd = require('ddd-es-node');
 const Entity = ddd.Entity;
 const EntityEvent = ddd.EntityEvent;
 
-class InteractionInitiatedEvent extends EntityEvent {
+class InteractionEvent extends EntityEvent {
+    constructor() {
+        super();
+    }
+}
+
+class InteractionInitiatedEvent extends InteractionEvent {
     constructor(channel) {
         super();
         this.channel = channel;
     }
 }
 
-class InteractionPlacedOnHoldEvent extends EntityEvent {
+class InteractionPlacedOnHoldEvent extends InteractionEvent {
     constructor() {
         super();
     }
 }
 
-class InteractionRoutedEvent extends EntityEvent {
+class InteractionRoutedEvent extends InteractionEvent {
     constructor(endpoint) {
         super();
         this.endpoint = endpoint;
     }
 }
 
-class InteractionAnsweredEvent extends EntityEvent {
+class InteractionAnsweredEvent extends InteractionEvent {
     constructor(endpoint) {
         super();
         this.endpoint = endpoint;
     }
 }
 
-class InteractionEndedEvent extends EntityEvent {
+class InteractionEndedEvent extends InteractionEvent {
     constructor() {
         super();
     }
@@ -98,6 +104,7 @@ class InteractionService {
     }
 }
 
+exports.InteractionEvent = InteractionEvent;
 exports.InteractionInitiatedEvent = InteractionInitiatedEvent;
 exports.InteractionPlacedOnHoldEvent = InteractionPlacedOnHoldEvent;
 exports.InteractionRoutedEvent = InteractionRoutedEvent;

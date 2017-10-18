@@ -10,7 +10,6 @@ const agentInteractionsView = {};
 
 exports.init = (eventBus) => {
     eventBus.subscribe((event) => {
-        console.log(event);
         if (event instanceof interactions.InteractionInitiatedEvent) {
             interactionsView[event.streamId] = interactionsView[event.streamId] || {id: event.streamId};
             interactionsView[event.streamId].channel = event.channel;
@@ -21,10 +20,10 @@ exports.init = (eventBus) => {
             } else if (event instanceof chats.ChatInitiatedEvent) {
                 interactionsView[event.streamId].originator = event.from;
             }
-        } else if (event instanceof agents.AgentExtensionAssignedEvent) {
+        } else if (event instanceof agents.AgentEndpointAssignedEvent) {
             agentsView[event.streamId] = agentsView[event.streamId] || {id: event.streamId};
-            agentsView[event.streamId].extension = event.extension;
-            agentsByExtensionView[event.extension] = agentsView[event.streamId];
+            agentsView[event.streamId][event.channel] = {endpoint: event.endpoint};
+            agentsByExtensionView[event.endpoint] = agentsView[event.streamId];
         } else if (event instanceof interactions.InteractionRoutedEvent) {
             if (interactionsView[event.streamId]) {
                 const agentId = agentsByExtensionView[event.endpoint].id;
@@ -44,18 +43,16 @@ exports.init = (eventBus) => {
     }, {replay: true});
 };
 
-exports.findChat = (chatId) => {
-  return interactionsView[chatId];
+exports.findInteraction = (interactionId) => {
+    return interactionsView[interactionId];
 };
 
-exports.listInteractions = () => {
-    return Object.keys(interactionsView).map(interactionId => interactionsView[interactionId]);
-};
-
-exports.listCalls = () => {
-    return exports.listInteractions().filter((interaction) => {
-        return interaction.channel === 'voice';
-    });
+exports.listInteractions = (channel) => {
+    return Object.keys(interactionsView)
+        .map(interactionId => interactionsView[interactionId])
+        .filter(interaction => {
+            return typeof channel === 'undefined' || interaction.channel === channel;
+        });
 };
 
 exports.findAgentInteractions = (agentId) => {
