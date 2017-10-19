@@ -13,8 +13,8 @@ module.exports = (eventBus, agentService, interactionServices) => {
                 return;
             }
 
-            if(event.channel === 'chat') {
-                console.log('ignoring chat interaction');
+            if (event.channel === 'chat') {
+                interactionService.routeTo(event.streamId, 'chat-bot');
                 return;
             }
 
@@ -34,7 +34,17 @@ module.exports = (eventBus, agentService, interactionServices) => {
             }, {
                 channel: event.channel
             });
-
+        } else if (event instanceof interactions.InteractionRoutedEvent) {
+            const matches = /^queue:(.*)$/.exec(event.endpoint);
+            if(matches !== null) {
+                const queue = matches[1];
+                if(queue === 'agentChatQueue') {
+                    // fix this
+                    interactionServices['chat'].routeTo(event.streamId, `dest:1001:queue:${queue}`);
+                } else if (queue === 'bot') {
+                    interactionServices['chat'].routeTo(event.streamId, `dest:chat-bot:queue:${queue}`);
+                }
+            }
         } else if (event instanceof interactions.InteractionEndedEvent) {
             if (releaseAgent[event.streamId]) {
                 releaseAgent[event.streamId]();

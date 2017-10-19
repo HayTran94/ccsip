@@ -39,13 +39,13 @@ class Agent extends Entity {
     }
 
     makeAvailable(channel) {
-        if ((this.channels || {})[channel] !== 'available') {
+        if (this.getChannelStatus(channel) !== 'available') {
             this.dispatch(this.id, new AgentStatusChangedEvent(channel, 'available'));
         }
     }
 
     makeOffline(channel) {
-        if ((this.channels || {})[channel] !== 'offline') {
+        if (this.getChannelStatus(channel) !== 'offline') {
             this.dispatch(this.id, new AgentStatusChangedEvent(channel, 'offline'));
         }
     }
@@ -53,6 +53,11 @@ class Agent extends Entity {
     reserve(channel) {
         this.dispatch(this.id, new AgentStatusChangedEvent(channel, 'reserved'));
     }
+
+    getChannelStatus(channel) {
+        return ((this.channels || {})[channel]||{}).status;
+    }
+
 }
 
 const agents = {};

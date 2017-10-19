@@ -41,22 +41,14 @@ module.exports = (port, agentService, chatService, eventStore) => {
          */
     });
 
-    app.get('/route/:channel', (req, res) => {
-        console.log(req.params, req.query);
-        if(req.params.channel === 'chat') {
-            if(req.query.queue === 'bot') {
-                res.send('CCaaSBot');
-                return;
-            }
+    app.post('/route/:interactionId', (req, res) => {
+        const interactionId = req.params.interactionId;
+        const channel = req.body.channel;
+        const queue = req.body.queue;
+        if(channel === 'chat') {
+            chatService.routeTo(interactionId, `queue:${queue}`);
         }
-        const agents = agentService.findAvailableAgents({
-            channel: req.params.channel
-        }).map(agent => {
-            return agent.id
-        });
-        res.send(agents.length === 0
-            ? 'queue'
-            : agents[Math.floor(Math.random() * agents.length)]);
+        res.json({});
     });
 
     app.get('/interactions', (req, res) => {

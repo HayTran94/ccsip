@@ -25,7 +25,7 @@ exports.init = (eventBus) => {
             agentsView[event.streamId][event.channel] = {endpoint: event.endpoint};
             agentsByExtensionView[event.endpoint] = agentsView[event.streamId];
         } else if (event instanceof interactions.InteractionRoutedEvent) {
-            if (interactionsView[event.streamId]) {
+            if (interactionsView[event.streamId] && agentsByExtensionView[event.endpoint]) {
                 const agentId = agentsByExtensionView[event.endpoint].id;
                 agentInteractionsView[agentId] = agentInteractionsView[agentId] || [];
                 agentInteractionsView[agentId].push(event.streamId);
