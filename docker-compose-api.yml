@@ -9,7 +9,6 @@ services:
     environment:
       - DISABLED=false
       - SIGNALING_PROXY_HOST
-      - DEBUG=meshage
       - INSTANCE_NAME
       - INSTANCE_TYPE
       - PRIVATE_ADDR

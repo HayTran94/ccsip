@@ -56,13 +56,11 @@ if (process.env.SIGNALING_PROXY_HOST) {
         } else {
 
             agentService
-                .assignEndpoint('CCaaSBot', 'chat', 'dest:CCaaSBot:queue:bot')
+                .assignEndpoint('CCaaSBot', 'chat', 'dest:CCaaSBot:queue:bot', 1000000)
                 .then(() => {
-                    console.log('ASSIGNING_BOT_QUEUE');
                     return agentService.assignQueue('CCaaSBot', 'chat', 'chat-bot');
                 })
                 .then(() => {
-                    console.log('MAKING BOT AVAILABLE')
                     return agentService.makeAvailable('CCaaSBot', 'chat');
                 })
                 .catch((err) => {

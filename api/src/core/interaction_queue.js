@@ -27,6 +27,7 @@ module.exports = (eventBus, agentService, interactionServices) => {
             }
         } else if (event instanceof interactions.InteractionEndedEvent) {
             if (releaseAgent[event.streamId]) {
+                console.log('release interaction ', event);
                 releaseAgent[event.streamId]();
             }
         }
