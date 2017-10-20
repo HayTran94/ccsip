@@ -22,9 +22,10 @@ class InteractionPlacedOnHoldEvent extends InteractionEvent {
 }
 
 class InteractionRoutedEvent extends InteractionEvent {
-    constructor(endpoint) {
+    constructor(endpoint, channel) {
         super();
         this.endpoint = endpoint;
+        this.channel = channel;
     }
 }
 
@@ -42,9 +43,10 @@ class InteractionEndedEvent extends InteractionEvent {
 }
 
 class Interaction extends Entity {
-    constructor(id, config) {
+    constructor(id, channel, config) {
         super(id, Entity.CONFIG((self, event) => {
         }).apply(config));
+        this.channel = channel;
     }
 
     placeOnHold() {
@@ -52,7 +54,7 @@ class Interaction extends Entity {
     }
 
     routeTo(endpoint) {
-        this.dispatch(this.id, new InteractionRoutedEvent(endpoint));
+        this.dispatch(this.id, new InteractionRoutedEvent(endpoint, this.channel));
     }
 
     answer(endpoint) {

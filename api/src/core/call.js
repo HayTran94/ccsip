@@ -10,7 +10,7 @@ class CallInitiatedEvent extends interaction.InteractionInitiatedEvent {
 
 class Call extends interaction.Interaction {
     constructor(id) {
-        super(id, (self, event) => {
+        super(id, 'voice', (self, event) => {
             if (event instanceof CallInitiatedEvent) {
                 this.phoneNumber = event.phoneNumber;
             }

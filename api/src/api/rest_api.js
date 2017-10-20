@@ -11,12 +11,13 @@ module.exports = (port, agentService, interactionServices, eventStore) => {
     const chatService = interactionServices['chat'];
 
     app.get('/agents', (req, res) => {
-        res.json(agentService.findAgents().map(agent => {
-            return Object.assign({}, agent, {
-                interactions: projections.findAgentInteractions((agent.id))
-                    .map(formatInteraction)
-            });
-        }));
+        res.json(agentService.findAgents()
+            .map(agent => {
+                return Object.assign({}, agent, {
+                    interactions: projections.findAgentInteractions((agent.id))
+                        .map(formatInteraction)
+                });
+            }));
     });
 
     app.get('/route', (req, res) => {
@@ -59,6 +60,66 @@ module.exports = (port, agentService, interactionServices, eventStore) => {
 
     app.get('/interactions/:channel', (req, res) => {
         res.json(projections.listInteractions(req.params.channel).map(formatInteraction));
+    });
+
+    app.post('/agent/:agentId', (req, res) => {
+        const agentId = req.params.agentId;
+        console.log(agentId, req.body);
+        const withAgent = (agentId, handler) => {
+            const agent = agentService.findAgentById(agentId);
+            if (agent) {
+                handler(agent);
+            } else {
+                res.status(404).json({error: 'not found'});
+            }
+        };
+        withAgent(agentId, () => {
+            switch (req.body.command) {
+                case 'AssignEndpoint':
+                    agentService.assignEndpoint(agentId, req.body.channel, req.body.endpoint)
+                        .then(() => {
+                            res.json({status: 'ok'});
+                        })
+                        .catch((err) => {
+                            console.error(err);
+                            res.status(500).json({error: err.message});
+                        });
+                    break;
+                case 'AssignQueue':
+                    agentService.assignQueue(agentId, req.body.channel, req.body.queue)
+                        .then(() => {
+                            res.json({status: 'ok'});
+                        })
+                        .catch((err) => {
+                            console.error(err);
+                            res.status(500).json({error: err.message});
+                        });
+                    break;
+                case 'MakeAvailable':
+                    agentService.makeAvailable(agentId, req.body.channel)
+                        .then(() => {
+                            res.json({status: 'ok'});
+                        })
+                        .catch((err) => {
+                            console.error(err);
+                            res.status(500).json({error: err.message});
+                        });
+                    break;
+                case 'MakeOffline':
+                    agentService.makeOffline(agentId, req.body.channel)
+                        .then(() => {
+                            res.json({status: 'ok'});
+                        })
+                        .catch((err) => {
+                            console.error(err);
+                            res.status(500).json({error: err.message});
+                        });
+                    break;
+                default:
+                    res.send(400).json({status: 'bad request'});
+                    break;
+            }
+        });
     });
 
     app.post('/interaction/:interactionId', (req, res) => {

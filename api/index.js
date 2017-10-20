@@ -55,6 +55,22 @@ if (process.env.SIGNALING_PROXY_HOST) {
             console.log(err);
         } else {
 
+            agentService
+                .assignEndpoint('CCaaSBot', 'chat', 'dest:CCaaSBot:queue:bot')
+                .then(() => {
+                    console.log('ASSIGNING_BOT_QUEUE');
+                    return agentService.assignQueue('CCaaSBot', 'chat', 'chat-bot');
+                })
+                .then(() => {
+                    console.log('MAKING BOT AVAILABLE')
+                    return agentService.makeAvailable('CCaaSBot', 'chat');
+                })
+                .catch((err) => {
+                    console.error(err);
+                });
+
+            // dest:chat-bot:queue:${queue}
+
             router.register('external-device-events', (command) => {
 
                 const callId = /^([^@]+)/.exec(command.callID || command.callId)[0];
@@ -64,7 +80,7 @@ if (process.env.SIGNALING_PROXY_HOST) {
                         const agentId = command.caller; // caller is the one registering
                         const endpoint = `SIP/signaling-proxy/${command.caller}`;
                         agentService.assignEndpoint(agentId, 'voice', endpoint).then(() => {
-                            if (command.expires === '0') {
+                            if (command.expires === '0' || command.expires === '<null>') {
                                 agentService.makeOffline(agentId, 'voice');
                             } else {
                                 agentService.makeAvailable(agentId, 'voice');

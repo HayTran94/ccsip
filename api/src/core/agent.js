@@ -10,11 +10,33 @@ class AgentEndpointAssignedEvent extends EntityEvent {
     }
 }
 
+class AgentQueueAssignedEvent extends EntityEvent {
+    constructor(channel, queue) {
+        super();
+        this.channel = channel;
+        this.queue = queue;
+    }
+}
+
 class AgentStatusChangedEvent extends EntityEvent {
     constructor(channel, status) {
         super();
         this.channel = channel;
         this.status = status;
+    }
+}
+
+class AgentReservedEvent extends EntityEvent {
+    constructor(channel) {
+        super();
+        this.channel = channel;
+    }
+}
+
+class AgentReleasedEvent extends EntityEvent {
+    constructor(channel) {
+        super();
+        this.channel = channel;
     }
 }
 
@@ -24,6 +46,11 @@ class Agent extends Entity {
             if (event instanceof AgentEndpointAssignedEvent) {
                 this.endpoints = this.endpoints || {};
                 this.endpoints[event.channel] = event.endpoint;
+            } else if (event instanceof AgentQueueAssignedEvent) {
+                this.channels = this.channels || {};
+                this.channels[event.channel] = this.channels[event.channel] || {};
+                this.channels[event.channel].queues = this.channels[event.channel].queues || [];
+                this.channels[event.channel].queues.push(event.queue);
             } else if (event instanceof AgentStatusChangedEvent) {
                 this.channels = this.channels || {};
                 this.channels[event.channel] = this.channels[event.channel] || {};
@@ -35,6 +62,12 @@ class Agent extends Entity {
     assignEndpoint(channel, endpoint) {
         if ((this.endpoints || {})[channel] !== endpoint) {
             this.dispatch(this.id, new AgentEndpointAssignedEvent(channel, endpoint));
+        }
+    }
+
+    assignQueue(channel, queue) {
+        if(!this.hasChannelQueue(channel, queue)) {
+            this.dispatch(this.id, new AgentQueueAssignedEvent(channel, queue));
         }
     }
 
@@ -51,11 +84,19 @@ class Agent extends Entity {
     }
 
     reserve(channel) {
-        this.dispatch(this.id, new AgentStatusChangedEvent(channel, 'reserved'));
+        this.dispatch(this.id, new AgentReservedEvent(channel));
+    }
+
+    release(channel) {
+        this.dispatch(this.id, new AgentReleasedEvent(channel));
     }
 
     getChannelStatus(channel) {
         return ((this.channels || {})[channel]||{}).status;
+    }
+
+    hasChannelQueue(channel, queue) {
+        return (((this.channels || {})[channel]||{}).queues || []).indexOf(queue) > -1;
     }
 
 }
@@ -65,14 +106,24 @@ const agents = {};
 class AgentService {
     constructor(entityRepository, eventBus) {
         this.entityRepository = entityRepository;
+        const initAgentRec = (agentId, channel) => {
+            agents[agentId] = agents[agentId] || {id: agentId};
+            if(channel) {
+                agents[agentId][channel] = agents[agentId][channel] || { queues: [] };
+            }
+            return agents[agentId];
+        };
         eventBus.subscribe((event) => {
             if (event instanceof AgentEndpointAssignedEvent) {
-                agents[event.streamId] = agents[event.streamId] || {id: event.streamId};
-                agents[event.streamId][event.channel] = {endpoint: event.endpoint};
+                initAgentRec(event.streamId, event.channel)[event.channel].endpoint = event.endpoint;
+            } else if (event instanceof AgentQueueAssignedEvent) {
+                initAgentRec(event.streamId, event.channel)[event.channel].queues .push(event.queue);
             } else if (event instanceof AgentStatusChangedEvent) {
-                if(agents[event.streamId] && agents[event.streamId][event.channel]) {
-                    agents[event.streamId][event.channel].status = event.status;
-                }
+                initAgentRec(event.streamId, event.channel)[event.channel].status = event.status;
+            } else if (event instanceof AgentReservedEvent) {
+                initAgentRec(event.streamId, event.channel)[event.channel].reserved = true;
+            } else if (event instanceof AgentReleasedEvent) {
+                initAgentRec(event.streamId, event.channel)[event.channel].reserved = false;
             }
         }, {replay: true});
     }
@@ -101,10 +152,11 @@ class AgentService {
                     // select available agent randomly
                     const agent = agents[Math.floor(Math.random() * agents.length)];
                     // 'reserve' agent by placing them offline
-                    this.reserve(agent.id).then(() => {
+                    const channelToReserve = (criteria||{}).channel;
+                    this.reserve(agent.id, channelToReserve).then(() => {
                         releaseActions.push(() => {
                             // 'release' agent after call completes
-                            this.makeAvailable(agent.id, (criteria||{}).channel);
+                            this.release(agent.id, channelToReserve);
                         });
                         callback(agent);
                     });
@@ -114,6 +166,10 @@ class AgentService {
         check();
         return release;
     }
+
+    findAgentById(agentId) {
+        return agents[agentId];
+    };
 
     findAgents() {
         return Object.keys(agents).map(agentId => {
@@ -126,19 +182,31 @@ class AgentService {
         return this.findAgents()
             .filter(agent => {
                 const channel = criteria.channel;
-                if(channel) {
-                    return (agent[channel]
-                    && agent[channel].endpoint
-                    && agent[channel].status === 'available');
+                const evals = [];
+                evals.push((channel && agent[channel]
+                && agent[channel].endpoint
+                && agent[channel].status === 'available'
+                && !agent[channel].reserved));
+                if (criteria.queue) {
+                    evals.push(agent[channel] && agent[channel].queues && agent[channel].queues.indexOf(criteria.queue) > -1);
                 } else {
-                    return false;
+                    evals.push(agent[channel] && (!agent[channel].queues || agent[channel].queues.length === 0));
                 }
+                return evals.reduce((prev, cur) => {
+                    return prev && cur
+                }, true);
             });
     }
 
     assignEndpoint(agentId, channel, endpoint) {
         return this.entityRepository.load(Agent, agentId).then((agent) => {
             agent.assignEndpoint(channel, endpoint);
+        });
+    }
+
+    assignQueue(agentId, channel, queue) {
+        return this.entityRepository.load(Agent, agentId).then((agent) => {
+            agent.assignQueue(channel, queue);
         });
     }
 
@@ -159,9 +227,18 @@ class AgentService {
             agent.reserve(channel);
         });
     }
+
+    release(agentId, channel) {
+        return this.entityRepository.load(Agent, agentId).then((agent) => {
+            agent.release(channel);
+        });
+    }
 }
 
 exports.AgentEndpointAssignedEvent = AgentEndpointAssignedEvent;
+exports.AgentQueueAssignedEvent = AgentQueueAssignedEvent;
 exports.AgentStatusChangedEvent = AgentStatusChangedEvent;
+exports.AgentReservedEvent = AgentReservedEvent;
+exports.AgentReleasedEvent = AgentReleasedEvent;
 exports.Agent = Agent;
 exports.AgentService = AgentService;

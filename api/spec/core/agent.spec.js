@@ -5,18 +5,96 @@ describe('agent', () => {
     it('determines available agents based on channel and status', () => {
         specHelper.es(es => {
             const agentService = new agents.AgentService(es.entityRepository, es.eventBus);
-            return agentService.assignEndpoint('agent1234', 'voice', 'ext12345').then(() => {
-                return agentService.makeAvailable('agent1234', 'voice').then(() => {
-                    const voiceAgents = agentService.findAvailableAgents({
+            return agentService.assignEndpoint('agent1234', 'voice', 'ext12345')
+                .then(() => {
+                    return agentService.makeAvailable('agent1234', 'voice').then(() => {
+                        const voiceAgents = agentService.findAvailableAgents({
+                            channel: 'voice'
+                        });
+                        const chatAgents = agentService.findAvailableAgents({
+                            channel: 'chat'
+                        });
+                        expect(voiceAgents.length).toEqual(1);
+                        expect(chatAgents.length).toEqual(0);
+                    });
+                });
+        });
+    });
+    describe('when queue criteria is supplied', () => {
+        it('only returns agents in the queue', () => {
+            specHelper.es(es => {
+                const agentService = new agents.AgentService(es.entityRepository, es.eventBus);
+                withAgents(agentService, [{
+                    id: 'agent1234',
+                    channels: [{
+                        channel: 'voice',
+                        endpoint: 'ext12345',
+                        queues: ['some-queue']
+                    }]
+                }]).then(() => {
+                    const queueMatch = agentService.findAvailableAgents({
+                        channel: 'voice',
+                        queue: 'some-queue'
+                    });
+                    const queueMismatch = agentService.findAvailableAgents({
+                        channel: 'voice',
+                        queue: 'no-queue'
+                    });
+                    expect(queueMatch.length).toEqual(1);
+                    expect(queueMismatch.length).toEqual(0);
+                });
+            });
+        });
+    });
+    describe('when queue criteria is not supplied', () => {
+        it('excludes agents explicitly in a queue', () => {
+            specHelper.es(es => {
+                const agentService = new agents.AgentService(es.entityRepository, es.eventBus);
+                withAgents(agentService, [{
+                    id: 'agent1234',
+                    channels: [{
+                        channel: 'voice',
+                        endpoint: 'ext12345',
+                        queues: ['some-queue']
+                    }]
+                }, {
+                    id: 'agent2234',
+                    channels: [{
+                        channel: 'voice',
+                        endpoint: 'ext22345'
+                    }]
+                }]).then(() => {
+                    const noQueueCriteria = agentService.findAvailableAgents({
                         channel: 'voice'
                     });
-                    const chatAgents = agentService.findAvailableAgents({
-                        channel: 'chat'
+                    const queueCriteria = agentService.findAvailableAgents({
+                        channel: 'voice',
+                        queue: 'some-queue'
                     });
-                    expect(voiceAgents.length).toEqual(1);
-                    expect(chatAgents.length).toEqual(0);
+                    expect(noQueueCriteria[0].id).toEqual('agent2234');
+                    expect(queueCriteria[0].id).toEqual('agent1234');
                 });
             });
         });
     });
 });
+
+const withAgents = (agentService, agents) => {
+    return Promise.all(agents.map((agent) => {
+        return Promise.all((agent.channels || []).map((channel) => {
+            return agentService.assignEndpoint(agent.id, channel.channel, channel.endpoint)
+                .then(() => {
+                    if (channel.queues) {
+                        return Promise.all(channel.queues.map((queue) => {
+                            return agentService.assignQueue(agent.id, channel.channel, queue);
+                        }));
+                    } else {
+                        return Promise.resolve();
+                    }
+                })
+                .then(() => {
+                    return agentService.makeAvailable(agent.id, channel.channel);
+                });
+        }));
+    }));
+};

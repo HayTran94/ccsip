@@ -21,7 +21,7 @@ class ChatMessagePostedEvent extends interaction.InteractionEvent {
 
 class Chat extends interaction.Interaction {
     constructor(id) {
-        super(id, (self, event) => {
+        super(id, 'chat', (self, event) => {
             if (event instanceof ChatInitiatedEvent) {
                 this.originator = event.from;
             }
