@@ -20,17 +20,19 @@ const interactionQueue = require('./src/core/interaction_queue');
 // api
 const restAPI = require('./src/api/rest_api');
 
+const interactionServices = {
+    voice: callService,
+    chat: chatService
+};
+
 // init projections
 projections.init(ddd.eventBus);
 
 // init interaction queue
-interactionQueue(ddd.eventBus, agentService, {
-    voice: callService,
-    chat: chatService
-});
+interactionQueue(ddd.eventBus, agentService, interactionServices);
 
 // init restAPI
-restAPI(9999, agentService, chatService, ddd.eventStore);
+restAPI(9999, agentService, interactionServices, ddd.eventStore);
 
 if (process.env.SIGNALING_PROXY_HOST) {
     console.log(`signaling proxy host set to ${process.env.SIGNALING_PROXY_HOST}`);

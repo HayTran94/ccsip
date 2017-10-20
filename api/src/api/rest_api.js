@@ -6,7 +6,9 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-module.exports = (port, agentService, chatService, eventStore) => {
+module.exports = (port, agentService, interactionServices, eventStore) => {
+
+    const chatService = interactionServices['chat'];
 
     app.get('/agents', (req, res) => {
         res.json(agentService.findAgents().map(agent => {
@@ -45,7 +47,7 @@ module.exports = (port, agentService, chatService, eventStore) => {
         const interactionId = req.params.interactionId;
         const channel = req.body.channel;
         const queue = req.body.queue;
-        if(channel === 'chat') {
+        if (channel === 'chat') {
             chatService.routeTo(interactionId, `queue:${queue}`);
         }
         res.json({});
@@ -57,6 +59,49 @@ module.exports = (port, agentService, chatService, eventStore) => {
 
     app.get('/interactions/:channel', (req, res) => {
         res.json(projections.listInteractions(req.params.channel).map(formatInteraction));
+    });
+
+    app.post('/interaction/:interactionId', (req, res) => {
+        const interactionId = req.params.interactionId;
+        const withInteraction = (interactionId, handler) => {
+            const interaction = projections.findInteraction(interactionId);
+            if (interaction) {
+                handler(interaction);
+            } else {
+                res.status(404).json({error: 'not found'});
+            }
+        };
+        if (req.body.command === 'InitiateChat') {
+            const interactionService = interactionServices['chat'];
+            interactionService
+                .initiateChat(interactionId, req.body.from, req.body.initialMessage)
+                .then(() => {
+                    res.json({status: 'ok'});
+                })
+                .catch((err) => {
+                    console.error(err);
+                    res.status(500).json({error: err.message});
+                });
+        } else {
+            withInteraction(interactionId, (interactionModel) => {
+                const interactionService = interactionServices[interactionModel.channel];
+                switch (req.body.command) {
+                    case 'EndInteraction':
+                        interactionService.endInteraction(interactionId)
+                            .then(() => {
+                                res.json({status: 'ok'});
+                            })
+                            .catch((err) => {
+                                console.error(err);
+                                res.status(500).json({error: err.message});
+                            });
+                        break;
+                    default:
+                        res.send(400).json({status: 'bad request'});
+                        break;
+                }
+            });
+        }
     });
 
     app.get('/events', (req, res) => {

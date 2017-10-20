@@ -27,10 +27,11 @@ module.exports = (eventBus, agentService, interactionServices) => {
                     streamId: event.streamId,
                     numChecks: numChecks
                 });
-                console.log('interaction %s %s waiting for agent to become available (%s ms)',
+                console.log('interaction %s %s waiting for agent to become available (%s ms %s checks)',
                     event.channel,
                     event.streamId,
-                    timeWaiting);
+                    timeWaiting,
+                    numChecks);
             }, {
                 channel: event.channel
             });
