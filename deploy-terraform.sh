@@ -92,7 +92,7 @@ syncAction() {
 
 asExports() {
   for val in "$@"; do
-    echo "export $val=$(echo ${!val});"
+    echo "export $val='$(echo ${!val})';"
   done
 }
 
@@ -235,9 +235,6 @@ destroy() {
   INSTANCE_NAME=$1
   if [ -z "${INSTANCE_NAME}" ]; then
     terraform destroy ./terraform
-    curl -X DELETE -H "Content-Type: application/json" \
-      -H "Authorization: Bearer $DIGITALOCEAN_TOKEN" \
-      "https://api.digitalocean.com/v2/droplets?tag_name=$NAME"
   else
     INSTANCE_ID=$(dropletId "${INSTANCE_NAME}")
     curl -X DELETE -H "Content-Type: application/json" \
