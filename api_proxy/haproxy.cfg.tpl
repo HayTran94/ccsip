@@ -23,12 +23,11 @@ defaults
     timeout http-keep-alive 15s
 
 frontend http-in
-bind *:80
+    bind *:80
+    bind *:443 ssl crt /etc/letsencrypt/live/ccsip-$INSTANCE_NAME.open-cc.org/bundle.pem
     stats enable
     stats refresh 30s
-    #stats hide-version
-    stats auth admin:admin
-    stats uri /admin?stats
+    stats uri /haproxy?stats
     default_backend nodes-http
 
 backend nodes-http
