@@ -4,14 +4,14 @@ services:
     command: -bootstrap
     image: gliderlabs/consul-server
     ports:
-    - 8300:8300
-    - 8400:8400
-    - 8500:8500
-    - 8600:53/udp
+      - 8300:8300
+      - 8400:8400
+      - 8500:8500
+      - 8600:53/udp
   redis:
     image: redis
     ports:
-    - 6379:6379
+      - 6379:6379
   twilio_event_adapter:
     build: ./twilio_event_adapter
     ports:
@@ -47,9 +47,18 @@ services:
       - SIP_EXTENSION_SECRET
       - SIP_TERMINATION_PHONE_NUMBER
   api_proxy:
-    build: ./api_proxy
+    build: ./haproxy
     ports:
       - 80:80
+      - 443:443
+    volumes:
+      - /ccsip/api_proxy:/ccsip/api_proxy
+    environment:
+      - HAPROXY_CFG=/ccsip/api_proxy/haproxy.cfg.tpl
+      - INSTANCE_NAME
+      - LETSENCRYPT_ACCOUNT_ID
+      - LETSENCRYPT_PRIVATE_KEY
+      - LETSENCRYPT_REGR
     cap_add:
       - NET_ADMIN
     depends_on:
