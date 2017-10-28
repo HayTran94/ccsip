@@ -26,7 +26,7 @@ mkdir -p /tmp/opensipsdb
 
 cat << EOF > /tmp/opensipsdb/version
 table_name(str) table_version(int)
-subscriber:7
+subscriber:6
 location:6
 aliases:6
 EOF
