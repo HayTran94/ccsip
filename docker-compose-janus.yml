@@ -1,0 +1,21 @@
+version: '2'
+services:
+  janus_proxy:
+    build: ./haproxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /ccsip/janus:/ccsip/janus
+    environment:
+      - HAPROXY_CFG=/ccsip/janus/haproxy.cfg
+      - INSTANCE_NAME
+      - PRIVATE_ADDR
+      - LETSENCRYPT_ACCOUNT_ID
+      - LETSENCRYPT_PRIVATE_KEY
+      - LETSENCRYPT_REGR
+    cap_add:
+      - NET_ADMIN
+  janus:
+    build: ./janus
+    network_mode: host
