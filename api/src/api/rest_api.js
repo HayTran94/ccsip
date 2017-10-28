@@ -191,6 +191,12 @@ module.exports = (port, agentService, interactionServices, eventStore) => {
             });
     });
 
+    app.get('/registrationtoken', (req, res) => {
+        res.json({
+            token: process.env.SIP_EXTENSION_SECRET
+        });
+    });
+
     app.listen(port);
 
 };

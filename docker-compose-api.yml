@@ -13,4 +13,5 @@ services:
       - INSTANCE_TYPE
       - PRIVATE_ADDR
       - CONSUL_HOST
+      - SIP_EXTENSION_SECRET
       #- RAW_ES_CONFIG={"type":"redis","host":"$REDIS_HOST"}
