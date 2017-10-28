@@ -5,8 +5,8 @@ FROM centos:centos7
 RUN yum update -y
 RUN yum install -y epel-release
 RUN yum install -y nano wget inotify-tools rsyslog
-RUN wget -O /etc/yum.repos.d/kamailio.repo http://download.opensuse.org/repositories/home:/kamailio:/v5.0.x-rpms/CentOS_7/home:kamailio:v5.0.x-rpms.repo
-RUN yum install -y kamailio
+RUN wget -O /etc/yum.repos.d/kamailio.repo http://download.opensuse.org/repositories/home:/kamailio:/v4.4.x-rpms/CentOS_7/home:kamailio:v4.4.x-rpms.repo
+RUN yum install -y kamailio kamailio-websocket kamailio-sctp
 RUN yum -y install tar
 
 # -------------------- Consul template
