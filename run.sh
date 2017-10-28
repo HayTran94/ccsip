@@ -57,7 +57,7 @@ export SIP_TERMINATION_PHONE_NUMBER="${TWILIO_SIP_TRUNK_PN}"
 REPLACE_VARS="'"$(declare -px | awk '{print $3}' | awk -F'=' '{print "${"$1"}"}' | tr '\n' ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"'"
 
 find /${DP_NAME}/ \
-  \( -name '*.cfg' -o -name '*.conf' -o -name '*.yml' \) \
+  \( -name '*.cfg' -o -name '*.conf' -o -name '*.yml' -o -name '*.tpl' \) \
   -exec sh -c 'envsubst '"$REPLACE_VARS"' < {} > {}.tmp; mv {}.tmp {}' \;
 
 docker-compose -f /${DP_NAME}/docker-compose-${INSTANCE_TYPE}.yml rm -f
