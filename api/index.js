@@ -17,6 +17,10 @@ const callService = new calls.CallService(ddd.entityRepository);
 const agentService = new agents.AgentService(ddd.entityRepository, ddd.eventBus);
 const interactionQueue = require('./src/core/interaction_queue');
 
+// util
+
+const registrationHelper = require('./src/integration/registration_helper');
+
 // api
 const restAPI = require('./src/api/rest_api');
 
@@ -33,6 +37,8 @@ interactionQueue(ddd.eventBus, agentService, interactionServices);
 
 // init restAPI
 restAPI(9999, agentService, interactionServices, ddd.eventStore);
+
+const contactLocations = {};
 
 if (process.env.SIGNALING_PROXY_HOST) {
     console.log(`signaling proxy host set to ${process.env.SIGNALING_PROXY_HOST}`);
@@ -75,14 +81,18 @@ if (process.env.SIGNALING_PROXY_HOST) {
 
                 if (command.type === 'sip-phone') {
                     if (command.action === 'register') {
-                        const agentId = command.caller; // caller is the one registering
-                        const endpoint = `SIP/signaling-proxy/${command.caller}`;
-                        agentService.assignEndpoint(agentId, 'voice', endpoint).then(() => {
-                            if (command.expires === '0' || command.expires === '<null>') {
-                                agentService.makeOffline(agentId, 'voice');
-                            } else {
-                                agentService.makeAvailable(agentId, 'voice');
-                            }
+                        registrationHelper(command, (caller, activeRegistrations) => {
+                            const agentId = caller; // caller is the one registering
+                            const endpoint = `SIP/signaling-proxy/${agentId}`;
+                            const isActive = activeRegistrations.length > 0;
+
+                            agentService.assignEndpoint(agentId, 'voice', endpoint).then(() => {
+                                if (isActive) {
+                                    agentService.makeAvailable(agentId, 'voice');
+                                } else {
+                                    agentService.makeOffline(agentId, 'voice');
+                                }
+                            });
                         });
                     }
                 } else if (command.type === 'sip-call') {
@@ -116,7 +126,7 @@ if (process.env.SIGNALING_PROXY_HOST) {
                 } else if (command.type === 'sms-message') {
                     if (command.action === 'received') {
                         const chat = projections.findInteraction(command.conversationId);
-                        if(chat) {
+                        if (chat) {
                             chatService.postMessage(
                                 command.conversationId,
                                 command.from,
