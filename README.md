@@ -6,7 +6,13 @@ ccsip is a programmable SIP based communications service built with [Asterisk](h
 
 ##### The following programs are required to run this:
 - [git](https://git-scm.com/)
+- [terraform](https://www.terraform.io/)
 - [jq](https://stedolan.github.io/jq/)
+
+##### ... and accounts with the following services are needed:
+- [DigitalOcean](https://www.digitalocean.com)
+- [Twilio](https://www.twilio.com/)
+- [letsencrypt](https://letsencrypt.org/) _(optional)_
 
 ##### Create a SIP Trunk using Twilio
 Start by creating a twilio account and configuring an elastic SIP trunk. Instructions can be found [here](https://www.twilio.com/docs/api/sip-trunking/getting-started).
@@ -18,11 +24,17 @@ Create a file named `.env` in the project root dir. Inside it `export` the follo
 - `SIP_TERMINATION_USER` — a valid user specified in the twilio SIP trunk credentials list
 - `SIP_TERMINATION_SECRET` - the password for the twilio SIP trunk user 
 - `SIP_EXTENSION_SECRET` — the secret for registering SIP devices
+- `ASTERISK_API_USER` — the username to use for the asterisk api
+- `ASTERISK_API_SECRET` — the password to use for the asterisk api
 - `TWILIO_ACCOUNT_SID` — your twilio account SID
 - `TWILIO_AUTH_TOKEN` — your twilio auth token
 - `DIGITALOCEAN_TOKEN` — your DigitalOcean API token
-- `ASTERISK_API_USER` — the username to use for the asterisk api
-- `ASTERISK_API_SECRET` — the password to use for the asterisk api
+
+##### If using `letsencrypt` also set:
+
+- `LETSENCRYPT_ACCOUNT_ID`
+- `LETSENCRYPT_PRIVATE_KEY`
+- `LETSENCRYPT_REGR`
 
 ## Deploy
 
