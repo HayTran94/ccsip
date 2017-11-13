@@ -9,11 +9,6 @@ ccsip is a programmable SIP based communications service built with [Asterisk](h
 - [terraform](https://www.terraform.io/)
 - [jq](https://stedolan.github.io/jq/)
 
-##### ... and accounts with the following services are needed:
-- [DigitalOcean](https://www.digitalocean.com)
-- [Twilio](https://www.twilio.com/)
-- [letsencrypt](https://letsencrypt.org/) _(optional)_
-
 ##### Create a SIP Trunk using Twilio
 Start by creating a twilio account and configuring an elastic SIP trunk. Instructions can be found [here](https://www.twilio.com/docs/api/sip-trunking/getting-started).
 
@@ -29,12 +24,6 @@ Create a file named `.env` in the project root dir. Inside it `export` the follo
 - `TWILIO_ACCOUNT_SID` — your twilio account SID
 - `TWILIO_AUTH_TOKEN` — your twilio auth token
 - `DIGITALOCEAN_TOKEN` — your DigitalOcean API token
-
-##### If using `letsencrypt` also set:
-
-- `LETSENCRYPT_ACCOUNT_ID`
-- `LETSENCRYPT_PRIVATE_KEY`
-- `LETSENCRYPT_REGR`
 
 ## Deploy
 
