@@ -1,19 +1,14 @@
 const agents = require('../../src/core/agent');
-const clock = require('ddd-es-node/dist/src/core/clock').Clock;
 const specHelper = require('../spec_helper');
 
 describe('agent', () => {
     describe('when reserving agents', () => {
         let agent;
         beforeEach(() => {
-            clock.freeze();
             agent = new agents.Agent('agent1234');
             agent.dispatch = jest.fn((id, event) => {
                 agent.apply(event);
             });
-        });
-        afterEach(() => {
-            clock.unfreeze();
         });
         describe('when the agent goes to full capacity', () => {
             it('dispatches an AgentAtCapacityEvent', () => {

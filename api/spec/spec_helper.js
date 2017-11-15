@@ -1,4 +1,6 @@
 const BaseEntityRepository = require('ddd-es-node').BaseEntityRepository;
+require('ddd-es-node').testMode(true);
+
 
 exports.es = (callback) => {
     let _handlers = [];
