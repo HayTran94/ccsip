@@ -38,8 +38,6 @@ interactionQueue(ddd.eventBus, agentService, interactionServices);
 // init restAPI
 restAPI(9999, agentService, interactionServices, ddd.eventStore);
 
-const contactLocations = {};
-
 if (process.env.SIGNALING_PROXY_HOST) {
     console.log(`signaling proxy host set to ${process.env.SIGNALING_PROXY_HOST}`);
     const staticNodes = [{
@@ -78,6 +76,8 @@ if (process.env.SIGNALING_PROXY_HOST) {
             router.register('external-device-events', (command) => {
 
                 const callId = /^([^@]+)/.exec(command.callID || command.callId)[0];
+
+                console.log(JSON.stringify(command));
 
                 if (command.type === 'sip-phone') {
                     if (command.action === 'register') {
