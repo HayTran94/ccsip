@@ -24,16 +24,19 @@ help() {
 }
 
 updateDNSAction() {
+  if [ -n "${NAME}" ]; then
+    RECORD_PREFIX="${NAME}-"
+  fi
   INSTANCE_NAME="${1}"
   if [ -z "${INSTANCE_NAME}" ]; then
-    INSTANCES=$(list | jq -r '.droplets[] | .name + "," + .networks.v4[1].ip_address')
+    INSTANCES=$(list | jq -r '.droplets[] | .name + "," + .networks.v4[0].ip_address')
     for i in ${INSTANCES}; do
       INSTANCE_NAME=$(echo "${i}" | awk -F',' '{print $1}')
       INSTANCE_IP=$(echo "${i}" | awk -F',' '{print $2}')
-      updateDNS "${INSTANCE_NAME}" "${INSTANCE_IP}"
+      updateDNS "${RECORD_PREFIX}${INSTANCE_NAME}" "${INSTANCE_IP}"
     done
   else
-    updateDNS "${INSTANCE_NAME}" $(publicIPv4 "${INSTANCE_NAME}")
+    updateDNS "${RECORD_PREFIX}${INSTANCE_NAME}" $(publicIPv4 "${INSTANCE_NAME}")
   fi
 }
 
@@ -51,10 +54,10 @@ updateDNS() {
   if [ -n "${ROOT_DOMAIN}" ]; then
     if [ -n "${GODADDY_KEY}" ]; then
       echo "updating ${A_NAME}.${ROOT_DOMAIN} to ${IP_ADDR}"
-      curl -sX PUT https://api.godaddy.com/v1/domains/${ROOT_DOMAIN}/records/A/${A_NAME} \
+      curl -sX PUT "https://api.godaddy.com/v1/domains/${ROOT_DOMAIN}/records/A/${A_NAME}" \
         -H 'Content-Type: application/json' \
         -H "Authorization: sso-key ${GODADDY_KEY}:${GODADDY_SECRET}" \
-        -d '{"data":"'${IP_ADDR}'","ttl":600}' 2>&1 > /dev/null
+        -d '[{"data":"'${IP_ADDR}'","ttl":600}]'
       echo "updated ${A_NAME}.${ROOT_DOMAIN} to ${IP_ADDR}"
     fi
   fi
@@ -223,7 +226,7 @@ status() {
 
 publicIPv4() {
   INSTANCE_NAME="${1}"
-  echo $(list | jq -r '.droplets[] | select(.name=="'"$INSTANCE_NAME"'") | .networks.v4[1].ip_address')
+  echo $(list | jq -r '.droplets[] | select(.name=="'"$INSTANCE_NAME"'") | .networks.v4[0].ip_address')
 }
 
 dropletId() {
