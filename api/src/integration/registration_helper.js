@@ -4,7 +4,7 @@ module.exports = (command, callback) => {
     if (command.action === 'register') {
         if (command.ct) {
             const ctStr = Buffer.from(command.ct, 'base64').toString();
-            const matches = /^<([^>]+)>(;?(.*))?/.exec(ctStr);
+            const matches = /<([^>]+)>(;?(.*))?/.exec(ctStr);
 
             if (matches !== null) {
                 const contactParts = matches[1].split(';');
@@ -31,7 +31,7 @@ module.exports = (command, callback) => {
                 contactLocations[command.caller][registrationId].lastmodified = new Date().getTime();
                 contactLocations[command.caller][registrationId].active = command.expires !== '0' && command.expires !== '<null>';
 
-                console.log('CLS', contactLocations[command.caller]);
+                console.log('CLS: ' + JSON.stringify(contactLocations[command.caller], null, 2));
 
                 callback(command.caller, Object.keys(contactLocations[command.caller])
                     .map(registrationId => {
@@ -40,6 +40,8 @@ module.exports = (command, callback) => {
                     .filter((contactLocation) => {
                         return contactLocation.active;
                     }));
+            } else {
+                console.log('ctStr does not match: ' + ctStr);
             }
         }
     }
