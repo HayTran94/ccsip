@@ -64,10 +64,9 @@ module.exports = (port, agentService, interactionServices, eventStore) => {
 
     app.post('/agent/:agentId', (req, res) => {
         const agentId = req.params.agentId;
-        console.log(agentId, req.body);
         const withAgent = (agentId, handler) => {
             const agent = agentService.findAgentById(agentId);
-            if (agent) {
+            if (agent || req.body.command === 'AssignEndpoint') {
                 handler(agent);
             } else {
                 res.status(404).json({error: 'not found'});
